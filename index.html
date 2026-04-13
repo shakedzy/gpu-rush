@@ -416,6 +416,55 @@
     .info-close:hover {
       border-color: #5ce1e6;
     }
+    #joystickArea {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 0 8px;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #joystickBase {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(92,225,230,0.08) 0%, rgba(26,31,46,0.6) 100%);
+      border: 2px solid rgba(92,225,230,0.25);
+      box-shadow: 0 0 20px rgba(92,225,230,0.08), inset 0 0 30px rgba(0,0,0,0.4);
+    }
+    #joystickKnob {
+      position: absolute;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(92,225,230,0.45), rgba(92,225,230,0.15));
+      border: 2px solid rgba(92,225,230,0.5);
+      box-shadow: 0 0 12px rgba(92,225,230,0.25);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .mobile-active #joystickArea { display: flex; }
+    @media (orientation: landscape) {
+      .mobile-active #joystickArea { display: none; }
+    }
+    .mobile-active .crt-shell { border-radius: 6px; padding: 6px 6px 12px; }
+    .mobile-active .crt-footer { font-size: 15px; gap: 6px 8px; margin-top: 6px; }
+    .mobile-active .footer-vram { font-size: 14px; max-width: 60vw; }
+    @media (max-width: 600px) {
+      .news-paper { padding: 18px 14px 14px; }
+      .news-paper .headline { font-size: 16px; line-height: 1.6; }
+      .news-paper .effect { font-size: 24px; }
+      .news-paper .label { font-size: 26px; }
+      .news-paper .continue { font-size: 14px; }
+      .sellout-panel .bonus { font-size: 17px; }
+      .sell-highlight { font-size: 15px !important; }
+      .sell-yes .key, .sell-no .key { font-size: 15px; }
+      .sell-yes .desc, .sell-no .desc { font-size: 18px; }
+    }
   </style>
 </head>
 <body>
@@ -432,6 +481,11 @@
         <span id="vramHint" class="footer-vram" hidden></span>
         <span class="footer-fill" aria-hidden="true"></span>
         <button type="button" class="info-btn" id="infoBtn" aria-haspopup="dialog" aria-expanded="false">?</button>
+      </div>
+    </div>
+    <div id="joystickArea">
+      <div id="joystickBase">
+        <div id="joystickKnob"></div>
       </div>
     </div>
   </div>
@@ -466,10 +520,10 @@
   "use strict";
 
   // ============ CONSTANTS ============
-  const GAME_W = 320;
-  const GAME_H = 180;
-  const DISPLAY_W = 960;
-  const DISPLAY_H = 540;
+  let GAME_W = 320;
+  let GAME_H = 180;
+  let DISPLAY_W = 960;
+  let DISPLAY_H = 540;
   const PLAYER_MAX_SPEED = 2.4;
   const PLAYER_ACCEL = 0.45;
   const INVINCIBLE_FRAMES = 105;
@@ -925,10 +979,41 @@
   off.height = GAME_H;
   const octx = off.getContext("2d");
 
+  function isMobileDevice() {
+    return ("ontouchstart" in window || navigator.maxTouchPoints > 0) && window.innerWidth <= 900;
+  }
+  function updateMobileClass() {
+    const mobile = isMobileDevice();
+    document.body.classList.toggle("mobile-active", mobile);
+    return mobile;
+  }
+  function psFont(size) {
+    return `${Math.round(size * (isMobileDevice() ? 1.6 : 1))}px "Press Start 2P", monospace`;
+  }
+  function vtFont(size) {
+    return `${Math.round(size * (isMobileDevice() ? 1.6 : 1))}px "VT323", monospace`;
+  }
+  function isPortraitMobile() {
+    return isMobileDevice() && window.innerHeight > window.innerWidth;
+  }
   function resizeDisplay() {
+    const mobile = updateMobileClass();
+    const portrait = isPortraitMobile();
+    if (portrait) {
+      GAME_W = 200; GAME_H = 330;
+      DISPLAY_W = 600; DISPLAY_H = 990;
+    } else {
+      GAME_W = 320; GAME_H = 180;
+      DISPLAY_W = 960; DISPLAY_H = 540;
+    }
+    canvas.width = DISPLAY_W;
+    canvas.height = DISPLAY_H;
+    crackCanvas.width = DISPLAY_W;
+    crackCanvas.height = DISPLAY_H;
+    const joystickH = portrait ? 160 : 0;
     const maxW = window.innerWidth - 16;
-    const maxH = window.innerHeight - 72;
-    const scale = Math.min(maxW / DISPLAY_W, maxH / DISPLAY_H, 2.75);
+    const maxH = window.innerHeight - 72 - joystickH;
+    const scale = Math.min(maxW / DISPLAY_W, maxH / DISPLAY_H, mobile ? 10 : 2.75);
     const w = Math.floor(DISPLAY_W * scale);
     const h = Math.floor(DISPLAY_H * scale);
     canvas.style.width = w + "px";
@@ -1138,7 +1223,8 @@
     octx.fillStyle = COLORS.star;
     for (const st of stars) {
       st.y += st.sp * scrollMult;
-      if (st.y > GAME_H) st.y = 0;
+      if (st.y > GAME_H) { st.y = 0; st.x = Math.random() * GAME_W; }
+      if (st.x >= GAME_W) st.x = Math.random() * GAME_W;
       octx.fillRect(st.x | 0, st.y | 0, 1, 1);
     }
     if (rich) {
@@ -1297,6 +1383,7 @@
     pendingLevelComplete: false,
     shake: 0,
     touchTarget: null,
+    joystickInput: { ix: 0, iy: 0 },
     keys: Object.create(null),
     titleGpuT: 0,
     typewriter: "",
@@ -1711,6 +1798,8 @@
     if (keys.ArrowRight || keys.d || keys.D) ix += 1;
     if (keys.ArrowUp || keys.w || keys.W) iy -= 1;
     if (keys.ArrowDown || keys.s || keys.S) iy += 1;
+    const ji = state.joystickInput;
+    if (Math.abs(ji.ix) > 0.08 || Math.abs(ji.iy) > 0.08) { ix = ji.ix; iy = ji.iy; }
 
     if (state.modifiers.reversed) { ix = -ix; iy = -iy; }
     const psp = PLAYER_MAX_SPEED * (state.modifiers.playerSpeed || 1);
@@ -2008,6 +2097,82 @@
     }
   });
 
+  // ============ VIRTUAL JOYSTICK (MOBILE) ============
+  const joystickArea = document.getElementById("joystickArea");
+  const joystickBase = document.getElementById("joystickBase");
+  const joystickKnob = document.getElementById("joystickKnob");
+  const JOYSTICK_MAX_R = 44;
+  let joystickTouchId = null;
+  let joystickCenter = { x: 0, y: 0 };
+
+  function handleJoystickTouch(touch) {
+    let dx = touch.clientX - joystickCenter.x;
+    let dy = touch.clientY - joystickCenter.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > JOYSTICK_MAX_R) {
+      dx = (dx / dist) * JOYSTICK_MAX_R;
+      dy = (dy / dist) * JOYSTICK_MAX_R;
+    }
+    joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    state.joystickInput.ix = dx / JOYSTICK_MAX_R;
+    state.joystickInput.iy = dy / JOYSTICK_MAX_R;
+  }
+
+  function resetJoystick() {
+    joystickTouchId = null;
+    state.joystickInput.ix = 0;
+    state.joystickInput.iy = 0;
+    joystickKnob.style.transform = "translate(-50%, -50%)";
+  }
+
+  joystickBase.addEventListener("touchstart", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    initAudio();
+    const touch = e.changedTouches[0];
+    joystickTouchId = touch.identifier;
+    const rect = joystickBase.getBoundingClientRect();
+    joystickCenter.x = rect.left + rect.width / 2;
+    joystickCenter.y = rect.top + rect.height / 2;
+    handleJoystickTouch(touch);
+  }, { passive: false });
+
+  joystickBase.addEventListener("touchmove", function (e) {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === joystickTouchId) {
+        handleJoystickTouch(e.changedTouches[i]);
+        return;
+      }
+    }
+  }, { passive: false });
+
+  joystickBase.addEventListener("touchend", function (e) {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === joystickTouchId) {
+        resetJoystick();
+        return;
+      }
+    }
+  });
+
+  joystickBase.addEventListener("touchcancel", function () {
+    resetJoystick();
+  });
+
+  joystickArea.addEventListener("touchstart", function (e) {
+    initAudio();
+    const m = state.mode;
+    if (m === "playing" || m === "sellout") return;
+    e.preventDefault();
+    if (m === "newsPause") { dismissNewsPaper(); return; }
+    if (m === "title") { resetRun(); state.introT = 0; state.mode = "intro"; return; }
+    if (m === "intro") { state.mode = "levelIntro"; return; }
+    if (m === "levelIntro") { state.mode = "playing"; return; }
+    if (m === "gameOver" || m === "gameOverSold" || m === "win") { state.mode = "title"; resetTitleTypewriter(); return; }
+    if (m === "cutsceneBad" && state.cutsceneT > 5.5) { state.mode = "gameOverSold"; state.cutsceneT = 0; return; }
+  }, { passive: false });
+
   function resolveSellout(sold) {
     if (state.mode !== "sellout") return;
     state.mode = sold ? "cutsceneBad" : "playing";
@@ -2068,47 +2233,72 @@
   const HUD_HEART_STEP = 10;
 
   function drawHudOverlay(ctx2, tier) {
+    const portrait = GAME_W < GAME_H;
+    const hm = (!portrait && isMobileDevice()) ? 1.5 : 1;
+    const hps = Math.round(HUD_FONT_PS * hm);
+    const hBarW = portrait ? Math.min(80, GAME_W - 8) : Math.round(HUD_BAR_W * hm);
+    const hBarH = Math.round(HUD_BAR_H * hm);
+    const hStep = Math.round(HUD_HEART_STEP * hm);
+    const cfg = levelConfig();
     ctx2.textBaseline = "top";
     ctx2.textAlign = "left";
-    const cfg = levelConfig();
-    ctx2.font = `${HUD_FONT_PS}px "Press Start 2P", monospace`;
+
+    ctx2.font = `${hps}px "Press Start 2P", monospace`;
     ctx2.fillStyle = tier.tier === 0 ? "#c5d0e0" : "#fff";
     ctx2.fillText(`GPUs: ${state.levelGpus}/${cfg.quota}`, 4, 4);
-    ctx2.fillStyle = COLORS.uiGreen;
-    const filled = Math.min(1, state.levelGpus / cfg.quota);
-    ctx2.fillRect(4, 4 + HUD_FONT_PS + 2, HUD_BAR_W * filled, HUD_BAR_H);
-
-    let rowUnderBar = 4 + HUD_FONT_PS + 2 + HUD_BAR_H + 2;
-    if (cfg.boss) {
-      ctx2.font = `10px "VT323", monospace`;
-      if (state.phase === "boss" && state.boss) {
-        ctx2.fillStyle = "#ffe082";
-        ctx2.fillText(`Boss HP ${state.boss.hp}/${state.boss.maxHp} — grab GPUs to damage`, 4, rowUnderBar);
-      } else {
-        ctx2.fillStyle = "#a5d6a7";
-        ctx2.fillText("Fill bar → boss fight — then grab GPUs to damage it", 4, rowUnderBar);
-      }
-      rowUnderBar += 11;
-    }
-
-    ctx2.fillStyle = COLORS.uiPink;
-    let hx = 4;
-    const hy = rowUnderBar + 4;
-    ctx2.font = `${HUD_FONT_PS}px "Press Start 2P", monospace`;
-    for (let i = 0; i < state.lives; i++) {
-      ctx2.fillText("♥", hx, hy);
-      hx += HUD_HEART_STEP;
-    }
-
-    ctx2.fillStyle = COLORS.uiCyan;
-    const lvlText = `LVL ${cfg.n}`;
-    const tw = ctx2.measureText(lvlText).width;
-    ctx2.fillText(lvlText, (GAME_W - tw) / 2, 4);
 
     ctx2.fillStyle = COLORS.uiGold;
     const sc = `SCORE ${state.score}`;
-    const sw = ctx2.measureText(sc).width;
-    ctx2.fillText(sc, GAME_W - sw - 4, 4);
+    ctx2.textAlign = "right";
+    ctx2.fillText(sc, GAME_W - 4, 4);
+    ctx2.textAlign = "left";
+
+    ctx2.fillStyle = COLORS.uiGreen;
+    const filled = Math.min(1, state.levelGpus / cfg.quota);
+    ctx2.fillRect(4, 4 + hps + 2, hBarW * filled, hBarH);
+
+    let nextY = 4 + hps + 2 + hBarH + 2;
+
+    if (portrait) {
+      ctx2.fillStyle = COLORS.uiCyan;
+      ctx2.font = `${hps}px "Press Start 2P", monospace`;
+      ctx2.fillText(`LVL ${cfg.n}`, 4, nextY);
+      ctx2.fillStyle = COLORS.uiPink;
+      ctx2.textAlign = "right";
+      let hx = GAME_W - 4;
+      for (let i = state.lives - 1; i >= 0; i--) {
+        hx -= hStep;
+        ctx2.fillText("\u2665", hx + hStep, nextY);
+      }
+      ctx2.textAlign = "left";
+      nextY += hps + 4;
+    } else {
+      ctx2.fillStyle = COLORS.uiCyan;
+      const lvlText = `LVL ${cfg.n}`;
+      const tw = ctx2.measureText(lvlText).width;
+      ctx2.fillText(lvlText, (GAME_W - tw) / 2, 4);
+
+      ctx2.fillStyle = COLORS.uiPink;
+      let hx = 4;
+      const hy = nextY + 4;
+      ctx2.font = `${hps}px "Press Start 2P", monospace`;
+      for (let i = 0; i < state.lives; i++) {
+        ctx2.fillText("\u2665", hx, hy);
+        hx += hStep;
+      }
+      nextY = hy + hps + 4;
+    }
+
+    if (cfg.boss) {
+      ctx2.font = `${Math.round(10 * hm)}px "VT323", monospace`;
+      if (state.phase === "boss" && state.boss) {
+        ctx2.fillStyle = "#ffe082";
+        ctx2.fillText(`Boss HP ${state.boss.hp}/${state.boss.maxHp}`, 4, nextY);
+      } else {
+        ctx2.fillStyle = "#a5d6a7";
+        ctx2.fillText(portrait ? "Fill bar \u2192 boss fight" : "Fill bar \u2192 boss fight \u2014 then grab GPUs to damage it", 4, nextY);
+      }
+    }
 
     const EFFECT_ICONS = {
       CRYPTO: "\uD83D\uDCB0", HYPE: "\uD83D\uDCC8", BAN: "\uD83D\uDEAB",
@@ -2126,7 +2316,7 @@
     const ey = GAME_H - 12;
     const seen = new Set();
     ctx2.textAlign = "right";
-    ctx2.font = `${HUD_FONT_PS}px "Press Start 2P", monospace`;
+    ctx2.font = `${hps}px "Press Start 2P", monospace`;
     if (state.shieldTime > 0) {
       const label = `\uD83D\uDEE1\uFE0F ${Math.ceil(state.shieldTime)}s`;
       ctx2.fillStyle = COLORS.uiCyan;
@@ -2174,16 +2364,17 @@
   function drawBossTextOverlay(ctx2) {
     const b = state.boss;
     if (!b) return;
+    const bm = isMobileDevice() ? 1.5 : 1;
     ctx2.save();
     ctx2.textBaseline = "top";
     ctx2.textAlign = "left";
     ctx2.fillStyle = "#fff";
-    ctx2.font = '8px "Press Start 2P", monospace';
+    ctx2.font = `${Math.round(8 * bm)}px "Press Start 2P", monospace`;
     ctx2.fillText(b.def.name, 4, b.y + b.h + 6);
     ctx2.fillStyle = b.def.color;
-    ctx2.font = '10px "VT323", monospace';
+    ctx2.font = `${Math.round(10 * bm)}px "VT323", monospace`;
     ctx2.fillText(b.def.phrase, 4, b.y + b.h + 12);
-    ctx2.font = '7px "Press Start 2P", monospace';
+    ctx2.font = `${Math.round(7 * bm)}px "Press Start 2P", monospace`;
     ctx2.fillStyle = "#aaa";
     ctx2.textAlign = "left";
     const bossLabel = b.def.name;
@@ -2323,7 +2514,7 @@
         }
         if (e.ceoName) {
           ctx.save();
-          ctx.font = '6px "Press Start 2P", monospace';
+          ctx.font = `${Math.round(6 * (isMobileDevice() ? 1.5 : 1))}px "Press Start 2P", monospace`;
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
           ctx.fillStyle = "#fff";
@@ -2359,6 +2550,7 @@
     ctx.fillRect(0, 0, DISPLAY_W, DISPLAY_H);
     ctx.textAlign = "center";
     const t = state.introT;
+    const m = isMobileDevice() ? 1.35 : 1;
     let yPos = 50;
     for (const line of INTRO_LINES) {
       if (t < line.t) continue;
@@ -2367,24 +2559,24 @@
       ctx.globalAlpha = alpha;
       if (line.style === "head") {
         ctx.fillStyle = COLORS.uiGreen;
-        ctx.font = '16px "Press Start 2P", monospace';
+        ctx.font = `${Math.round(16 * m)}px "Press Start 2P", monospace`;
       } else if (line.style === "prompt") {
         const blink = Math.floor(performance.now() / 500) % 2;
         ctx.fillStyle = blink ? COLORS.uiGold : "transparent";
-        ctx.font = '14px "Press Start 2P", monospace';
+        ctx.font = `${Math.round(14 * m)}px "Press Start 2P", monospace`;
       } else {
         ctx.fillStyle = "#d8d8d8";
-        ctx.font = '22px "VT323", monospace';
+        ctx.font = `${Math.round(22 * m)}px "VT323", monospace`;
       }
       ctx.fillText(line.text, DISPLAY_W / 2, yPos);
-      yPos += line.style === "head" ? 32 : 26;
+      yPos += line.style === "head" ? Math.round(32 * m) : Math.round(26 * m);
     }
     ctx.globalAlpha = 1;
     ctx.textAlign = "left";
     ctx.fillStyle = "#555";
-    ctx.font = '13px "VT323", monospace';
+    ctx.font = vtFont(13);
     ctx.textAlign = "center";
-    ctx.fillText("TAP OR PRESS ENTER TO SKIP", DISPLAY_W / 2, DISPLAY_H - 12);
+    ctx.fillText("TAP TO SKIP", DISPLAY_W / 2, DISPLAY_H - 12);
     ctx.textAlign = "left";
   }
 
@@ -2407,27 +2599,28 @@
     ctx.shadowColor = "#3ecf5c";
     ctx.shadowBlur = 20 * pulse;
     ctx.fillStyle = `#3ecf5c`;
-    ctx.font = '28px "Press Start 2P", monospace';
+    ctx.font = psFont(28);
     ctx.textAlign = "center";
     ctx.fillText("GPU RUSH", DISPLAY_W / 2, 70);
     ctx.restore();
     ctx.shadowBlur = 0;
     ctx.fillStyle = COLORS.uiPink;
-    ctx.font = '12px "Press Start 2P", monospace';
+    ctx.font = psFont(12);
     ctx.fillText("The Indie Dev's Nightmare", DISPLAY_W / 2, 110);
 
     ctx.fillStyle = "#aaa";
-    ctx.font = '14px "VT323", monospace';
+    ctx.font = vtFont(14);
     ctx.fillText(state.typewriter || "", DISPLAY_W / 2, 145);
 
     ctx.fillStyle = "#888";
-    ctx.font = '12px "VT323", monospace';
-    ctx.fillText("Arrows / WASD move · Touch drag on mobile", DISPLAY_W / 2, 175);
+    ctx.font = vtFont(12);
+    const controlsText = isMobileDevice() ? "Use the joystick below to move" : "Arrows / WASD move · Touch drag on mobile";
+    ctx.fillText(controlsText, DISPLAY_W / 2, 175);
     ctx.fillStyle = COLORS.uiGold;
     const blink = Math.floor(performance.now() / 500) % 2;
-    if (blink) ctx.fillText("CLICK OR PRESS ENTER TO START", DISPLAY_W / 2, 210);
+    if (blink) ctx.fillText(isMobileDevice() ? "TAP TO START" : "CLICK OR PRESS ENTER TO START", DISPLAY_W / 2, 210);
     ctx.fillStyle = COLORS.uiGold;
-    ctx.font = '14px "VT323", monospace';
+    ctx.font = vtFont(14);
     ctx.fillText(`HIGH SCORE: ${state.highScore}`, DISPLAY_W / 2, 240);
     ctx.textAlign = "left";
   }
@@ -2438,25 +2631,24 @@
     ctx.fillRect(0, 0, DISPLAY_W, DISPLAY_H);
     const cfg = levelConfig();
     ctx.fillStyle = "#fff";
-    ctx.font = '22px "Press Start 2P", monospace';
+    ctx.font = psFont(22);
     ctx.textAlign = "center";
     ctx.fillText(`LEVEL ${cfg.n}`, DISPLAY_W / 2, 80);
     ctx.fillStyle = COLORS.uiCyan;
-    ctx.font = '12px "Press Start 2P", monospace';
+    ctx.font = psFont(12);
     ctx.fillText(cfg.subtitle, DISPLAY_W / 2, 120);
     ctx.fillStyle = "#aaa";
-    ctx.font = '16px "VT323", monospace';
-    const joke = cfg.joke;
-    ctx.fillText(joke, DISPLAY_W / 2, 160);
+    ctx.font = vtFont(16);
+    ctx.fillText(cfg.joke, DISPLAY_W / 2, 160);
     if (cfg.boss) {
       ctx.fillStyle = "#a5d6a7";
-      ctx.font = '15px "VT323", monospace';
+      ctx.font = vtFont(15);
       ctx.fillText("Collect enough GPUs to fill the bar — a boss gate opens.", DISPLAY_W / 2, 186);
       ctx.fillText("During the fight, every GPU you grab damages the boss.", DISPLAY_W / 2, 206);
     }
     ctx.fillStyle = COLORS.uiGold;
-    ctx.font = '11px "Press Start 2P", monospace';
-    ctx.fillText("PRESS ENTER / TAP TO CONTINUE", DISPLAY_W / 2, cfg.boss ? 256 : 220);
+    ctx.font = psFont(11);
+    ctx.fillText("TAP TO CONTINUE", DISPLAY_W / 2, cfg.boss ? 256 : 220);
     ctx.textAlign = "left";
   }
 
@@ -2464,11 +2656,11 @@
     ctx.fillStyle = COLORS.bg;
     ctx.fillRect(0, 0, DISPLAY_W, DISPLAY_H);
     ctx.fillStyle = COLORS.hudRed;
-    ctx.font = '20px "Press Start 2P", monospace';
+    ctx.font = psFont(20);
     ctx.textAlign = "center";
     ctx.fillText("GAME OVER", DISPLAY_W / 2, 90);
     ctx.fillStyle = "#aaa";
-    ctx.font = '14px "VT323", monospace';
+    ctx.font = vtFont(14);
     ctx.fillText("The corps won this round.", DISPLAY_W / 2, 130);
     ctx.fillText("Your GPU dreams remain dreams.", DISPLAY_W / 2, 155);
     ctx.fillStyle = COLORS.uiGold;
@@ -2481,8 +2673,8 @@
     const blink = Math.floor(performance.now() / 500) % 2;
     if (blink) {
       ctx.fillStyle = COLORS.uiGold;
-      ctx.font = '10px "Press Start 2P", monospace';
-      ctx.fillText("CLICK / ENTER TO TRY AGAIN", DISPLAY_W / 2, 260);
+      ctx.font = psFont(10);
+      ctx.fillText("TAP TO TRY AGAIN", DISPLAY_W / 2, 260);
     }
     ctx.textAlign = "left";
   }
@@ -2491,24 +2683,24 @@
     ctx.fillStyle = "#1a1208";
     ctx.fillRect(0, 0, DISPLAY_W, DISPLAY_H);
     ctx.fillStyle = COLORS.uiGold;
-    ctx.font = '16px "Press Start 2P", monospace';
+    ctx.font = psFont(16);
     ctx.textAlign = "center";
     ctx.fillText("YOU SOLD OUT.", DISPLAY_W / 2, 80);
     ctx.fillStyle = "#dcb";
-    ctx.font = '15px "VT323", monospace';
+    ctx.font = vtFont(15);
     ctx.fillText("Corner office. Free snacks.", DISPLAY_W / 2, 120);
     ctx.fillText("Your side project gathers dust.", DISPLAY_W / 2, 145);
     ctx.fillText("Was it worth it?", DISPLAY_W / 2, 170);
     ctx.fillStyle = COLORS.uiGold;
     ctx.fillText(`SCORE: ${state.score}`, DISPLAY_W / 2, 210);
     ctx.fillStyle = "#aa8866";
-    ctx.font = '12px "VT323", monospace';
+    ctx.font = vtFont(12);
     ctx.fillText("(includes corporate blood money)", DISPLAY_W / 2, 235);
     const blink = Math.floor(performance.now() / 500) % 2;
     if (blink) {
       ctx.fillStyle = COLORS.uiGold;
-      ctx.font = '10px "Press Start 2P", monospace';
-      ctx.fillText("CLICK / ENTER TO TRY AGAIN", DISPLAY_W / 2, 280);
+      ctx.font = psFont(10);
+      ctx.fillText("TAP TO TRY AGAIN", DISPLAY_W / 2, 280);
     }
     ctx.textAlign = "left";
   }
@@ -2528,16 +2720,16 @@
     }
     ctx.globalAlpha = 1;
     ctx.fillStyle = COLORS.uiGreen;
-    ctx.font = '18px "Press Start 2P", monospace';
+    ctx.font = psFont(18);
     ctx.textAlign = "center";
     ctx.fillText("YOU DID IT!", DISPLAY_W / 2, 70);
     ctx.fillStyle = "#ccc";
-    ctx.font = '14px "VT323", monospace';
+    ctx.font = vtFont(14);
     ctx.fillText("Against all odds, you shipped with real hardware.", DISPLAY_W / 2, 110);
     ctx.fillText("The corps tried to stop you. The news tried to shake you.", DISPLAY_W / 2, 132);
     ctx.fillText("They waved money. You stayed indie.", DISPLAY_W / 2, 154);
     ctx.fillStyle = COLORS.uiGold;
-    ctx.font = '20px "Press Start 2P", monospace';
+    ctx.font = psFont(20);
     ctx.fillText(`SCORE ${state.score}`, DISPLAY_W / 2, 200);
     if (state.score >= state.highScore) {
       state.highScore = state.score;
@@ -2546,8 +2738,8 @@
     const blink = Math.floor(performance.now() / 500) % 2;
     if (blink) {
       ctx.fillStyle = COLORS.uiGold;
-      ctx.font = '10px "Press Start 2P", monospace';
-      ctx.fillText("CLICK / ENTER FOR TITLE", DISPLAY_W / 2, 260);
+      ctx.font = psFont(10);
+      ctx.fillText("TAP FOR TITLE", DISPLAY_W / 2, 260);
     }
     ctx.textAlign = "left";
   }
@@ -2556,7 +2748,7 @@
     ctx.fillStyle = "#0a0a12";
     ctx.fillRect(0, 0, DISPLAY_W, DISPLAY_H);
     ctx.fillStyle = "#888";
-    ctx.font = '16px "VT323", monospace';
+    ctx.font = vtFont(16);
     ctx.textAlign = "center";
     const t = state.cutsceneT;
     if (t < 2) ctx.fillText("[CORNER OFFICE]", DISPLAY_W / 2, 100);
@@ -2565,15 +2757,15 @@
     else {
       ctx.fillText("A single tear rolls down your IDE.", DISPLAY_W / 2, 100);
       ctx.fillStyle = COLORS.uiGold;
-      ctx.font = '14px "Press Start 2P", monospace';
+      ctx.font = psFont(14);
       ctx.fillText(`FINAL SCORE: ${state.score}`, DISPLAY_W / 2, 150);
-      ctx.font = '11px "VT323", monospace';
+      ctx.font = vtFont(11);
       ctx.fillStyle = "#a98";
       ctx.fillText("(includes corporate blood money)", DISPLAY_W / 2, 180);
       ctx.fillStyle = COLORS.uiGold;
       if (Math.floor(performance.now() / 500) % 2) {
-        ctx.font = '10px "Press Start 2P", monospace';
-        ctx.fillText("CLICK / ENTER", DISPLAY_W / 2, 230);
+        ctx.font = psFont(10);
+        ctx.fillText("TAP TO CONTINUE", DISPLAY_W / 2, 230);
       }
     }
     ctx.textAlign = "left";
