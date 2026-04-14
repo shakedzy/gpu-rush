@@ -1,47 +1,2965 @@
-# 🎮 GPU RUSH — The Indie Dev's Nightmare
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>GPU RUSH — The Indie Dev's Nightmare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --crt-bg: #0d1117;
+      --bezel: #1a1f2e;
+      --bezel-light: #2a3348;
+      --screen-glow: rgba(0, 255, 120, 0.06);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: #050508;
+      overflow: hidden;
+      touch-action: none;
+      font-family: "VT323", monospace;
+    }
+    #wrap {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+    }
+    .crt-shell {
+      position: relative;
+      background: linear-gradient(145deg, var(--bezel-light), var(--bezel) 40%, #12151c 100%);
+      border-radius: 12px;
+      padding: 12px 12px 22px;
+      box-shadow:
+        0 0 0 3px #0a0c10,
+        0 20px 60px rgba(0,0,0,0.65),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+      max-width: 100%;
+      max-height: calc(100vh - 20px);
+    }
+    .crt-screen {
+      position: relative;
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow:
+        inset 0 0 80px rgba(0,0,0,0.5),
+        0 0 20px var(--screen-glow);
+    }
+    .crt-screen::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.12) 2px,
+        rgba(0,0,0,0.12) 4px
+      );
+      animation: flicker 0.12s infinite steps(2);
+    }
+    .crt-screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 6;
+      box-shadow: inset 0 0 120px rgba(0,0,0,0.55);
+      border-radius: 4px;
+    }
+    @keyframes flicker {
+      0%, 100% { opacity: 0.97; }
+      50% { opacity: 1; }
+    }
+    .crt-screen.life1::before {
+      opacity: 0.85;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 1px,
+        rgba(255,0,80,0.08) 1px,
+        rgba(255,0,80,0.08) 3px
+      );
+    }
+    #gameCanvas, #crackCanvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      vertical-align: middle;
+    }
+    #crackCanvas {
+      position: absolute;
+      left: 0; top: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #screenOverlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      overflow: auto;
+      font-family: "VT323", monospace;
+    }
+    #screenOverlay.visible {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .news-bg {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+    }
+    .news-paper {
+      position: relative;
+      width: 88%;
+      max-width: 580px;
+      max-height: 92%;
+      overflow: auto;
+      background: #131a22;
+      border: 2px solid #5ce1e6;
+      border-radius: 8px;
+      padding: 24px 28px 18px;
+      box-shadow: 0 0 30px rgba(92,225,230,0.15), 0 12px 40px rgba(0,0,0,0.6);
+      color: #e0e0e0;
+      text-align: center;
+    }
+    .news-paper .label {
+      font-size: 22px;
+      color: #aaa;
+      margin-bottom: 6px;
+    }
+    .news-paper .headline {
+      font-family: "Press Start 2P", monospace;
+      font-size: 14px;
+      color: #fff;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    .news-paper .effect {
+      font-size: 22px;
+      color: #5ce1e6;
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+    .news-paper .duration {
+      font-size: 20px;
+      color: #ffd54a;
+      margin-bottom: 16px;
+    }
+    .news-paper .continue {
+      font-family: "Press Start 2P", monospace;
+      font-size: 10px;
+      color: #666;
+      margin-top: 6px;
+    }
+    .sellout-bg {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.94);
+    }
+    .sellout-panel {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      text-align: center;
+      padding: 12px;
+    }
+    .sellout-panel .bonus {
+      font-family: "Press Start 2P", monospace;
+      font-size: 20px;
+      color: #ffeb3b;
+      text-shadow: 0 0 14px rgba(255,235,59,0.5);
+      margin-bottom: 4px;
+    }
+    .sellout-panel .bonus-sub {
+      font-size: 20px;
+      color: #fff;
+      margin-bottom: 14px;
+    }
+    .sellout-panel .offer-title {
+      font-family: "Press Start 2P", monospace;
+      font-size: 11px;
+      margin-bottom: 8px;
+    }
+    .sellout-panel .offer-line {
+      font-size: 20px;
+      color: #ffd54a;
+      line-height: 1.5;
+    }
+    .sellout-zone {
+      display: flex;
+      flex-direction: row;
+      width: 100%;
+      flex: 1;
+      margin-top: 12px;
+      gap: 2px;
+    }
+    .sellout-zone > div {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .sell-yes {
+      background: rgba(255,80,80,0.15);
+      border: 1px solid rgba(255,80,80,0.4);
+    }
+    .sell-no {
+      background: rgba(60,207,92,0.1);
+      border: 1px solid rgba(60,207,92,0.3);
+    }
+    .sell-yes .key {
+      font-family: "Press Start 2P", monospace;
+      font-size: 13px;
+      color: #f88;
+    }
+    .sell-no .key {
+      font-family: "Press Start 2P", monospace;
+      font-size: 13px;
+      color: #3ecf5c;
+    }
+    .sell-highlight {
+      font-family: "Press Start 2P", monospace;
+      font-size: 16px;
+      color: #ffeb3b;
+      text-shadow: 0 0 12px rgba(255,235,59,0.6), 0 0 24px rgba(255,235,59,0.3);
+      margin: 8px 0 4px;
+      line-height: 1.4;
+    }
+    .sell-perks {
+      font-size: 20px;
+      color: #a5d6a7;
+      margin: 8px 0 4px;
+      line-height: 1.6;
+    }
+    .sell-yes .desc, .sell-no .desc {
+      font-size: 16px;
+      color: #999;
+      margin-top: 6px;
+    }
+    .sellout-timer {
+      font-size: 18px;
+      color: #888;
+      margin-top: 6px;
+    }
+    .crt-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      margin-top: 10px;
+      padding: 0 6px;
+      font-family: "VT323", monospace;
+      font-size: 18px;
+      color: #6a7a8a;
+    }
+    .footer-vram {
+      color: #ff6b6b;
+      text-shadow: 0 0 8px rgba(255, 50, 80, 0.35);
+      font-size: 17px;
+      line-height: 1.2;
+      max-width: min(340px, 45vw);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .footer-vram--flash {
+      animation: footerVramFlash 0.9s ease-in-out infinite;
+    }
+    @keyframes footerVramFlash {
+      0%,
+      100% {
+        opacity: 1;
+        text-shadow: 0 0 10px rgba(255, 80, 100, 0.55);
+      }
+      50% {
+        opacity: 0.28;
+        text-shadow: 0 0 4px rgba(255, 50, 80, 0.15);
+      }
+    }
+    .footer-fill {
+      flex: 1 1 8px;
+      min-width: 0;
+    }
+    .power-led {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #1a3d1a;
+      box-shadow: inset 0 0 4px #000;
+      position: relative;
+    }
+    .power-led.on {
+      background: #3f6;
+      box-shadow: 0 0 8px #3f6, 0 0 16px rgba(51,255,102,0.4);
+      animation: pulseLed 2s ease-in-out infinite;
+    }
+    @keyframes pulseLed {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(0.95); }
+    }
+    .brand {
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+    .info-btn {
+      font-family: "VT323", monospace;
+      font-size: 20px;
+      padding: 4px 14px;
+      border-radius: 6px;
+      border: 1px solid #3a4558;
+      background: linear-gradient(180deg, #252b38, #1a1f2a);
+      color: #8ab4d4;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .info-btn:hover {
+      border-color: #5ce1e6;
+      color: #c5eef0;
+    }
+    .info-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(5, 6, 10, 0.88);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow: auto;
+    }
+    .info-modal.open {
+      display: flex;
+    }
+    .info-panel {
+      max-width: 520px;
+      width: 100%;
+      max-height: min(90vh, 640px);
+      overflow: auto;
+      background: #12151c;
+      border: 1px solid #2a3348;
+      border-radius: 10px;
+      padding: 20px 22px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+      font-family: "VT323", monospace;
+      font-size: 19px;
+      line-height: 1.45;
+      color: #c5d0de;
+    }
+    .info-panel h2 {
+      font-family: "Press Start 2P", monospace;
+      font-size: 11px;
+      color: #5ce1e6;
+      margin-bottom: 14px;
+      letter-spacing: 0.04em;
+    }
+    .info-panel dl {
+      margin: 0;
+    }
+    .info-panel dt {
+      color: #ffd54a;
+      font-weight: normal;
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .spr-icon {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+    .info-panel dt:first-child {
+      margin-top: 0;
+    }
+    .info-panel dd {
+      margin: 4px 0 0 0;
+      padding-left: 0;
+      color: #9aa8b8;
+    }
+    .info-close {
+      margin-top: 18px;
+      width: 100%;
+      font-family: "VT323", monospace;
+      font-size: 20px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #3a4558;
+      background: #1e2430;
+      color: #8ab4d4;
+      cursor: pointer;
+    }
+    .info-close:hover {
+      border-color: #5ce1e6;
+    }
+    #joystickArea {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 0 8px;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #joystickBase {
+      position: relative;
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(92,225,230,0.08) 0%, rgba(26,31,46,0.6) 100%);
+      border: 2px solid rgba(92,225,230,0.25);
+      box-shadow: 0 0 20px rgba(92,225,230,0.08), inset 0 0 30px rgba(0,0,0,0.4);
+    }
+    #joystickKnob {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(92,225,230,0.45), rgba(92,225,230,0.15));
+      border: 2px solid rgba(92,225,230,0.5);
+      box-shadow: 0 0 12px rgba(92,225,230,0.25);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .mobile-active #joystickArea { display: flex; }
+    @media (orientation: landscape) {
+      .mobile-active #joystickArea { display: none; }
+    }
+    .mobile-active .crt-shell { border-radius: 6px; padding: 6px 6px 12px; }
+    .mobile-active .crt-screen { box-shadow: inset 0 0 40px rgba(0,0,0,0.4), 0 0 20px var(--screen-glow); }
+    .mobile-active .crt-screen::after { box-shadow: inset 0 0 50px rgba(0,0,0,0.35); }
+    .mobile-active .crt-footer { font-size: 15px; gap: 6px 8px; margin-top: 6px; }
+    .mobile-active .footer-vram { font-size: 14px; max-width: 60vw; }
+    @media (max-width: 600px) {
+      .news-paper { padding: 18px 14px 14px; }
+      .news-paper .headline { font-size: 16px; line-height: 1.6; }
+      .news-paper .effect { font-size: 24px; }
+      .news-paper .label { font-size: 26px; }
+      .news-paper .continue { font-size: 14px; }
+      .sellout-panel .bonus { font-size: 17px; }
+      .sell-highlight { font-size: 15px !important; }
+      .sell-yes .key, .sell-no .key { font-size: 15px; }
+      .sell-yes .desc, .sell-no .desc { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div class="crt-shell">
+      <div class="crt-screen" id="crtScreen">
+        <canvas id="gameCanvas" width="960" height="540"></canvas>
+        <canvas id="crackCanvas" width="960" height="540"></canvas>
+        <div id="screenOverlay"></div>
+      </div>
+      <div class="crt-footer">
+        <div class="power-led on" id="powerLed"></div>
+        <span class="brand">GPU-TRON 3000 [v0.10]</span>
+        <span id="vramHint" class="footer-vram" hidden></span>
+        <span class="footer-fill" aria-hidden="true"></span>
+        <button type="button" class="info-btn" id="infoBtn" aria-haspopup="dialog" aria-expanded="false">?</button>
+      </div>
+    </div>
+    <div id="joystickArea">
+      <div id="joystickBase">
+        <div id="joystickKnob"></div>
+      </div>
+    </div>
+  </div>
+  <div class="info-modal" id="infoModal" role="dialog" aria-modal="true" aria-labelledby="infoTitle" hidden>
+    <div class="info-panel">
+      <h2 id="infoTitle">What’s on screen</h2>
+      <dl>
+        <dt><canvas class="spr-icon" data-sprite="player" width="12" height="15"></canvas> You (pixel dev)</dt>
+        <dd>Move with arrows / WASD / drag. Collect GPUs, dodge everything else.</dd>
+        <dt><canvas class="spr-icon" data-sprite="gpu" width="12" height="10"></canvas> Green GPU</dt>
+        <dd>Collect to fill the quota bar (top-left). That’s how you clear a stage.</dd>
+        <dt><canvas class="spr-icon" data-sprite="gpuGold" width="12" height="10"></canvas> Gold GPU</dt>
+        <dd>Rare — instantly maxes your graphics quality.</dd>
+        <dt><canvas class="spr-icon" data-sprite="agent" width="12" height="15"></canvas> Suits (agents)</dt>
+        <dd>Corporate buyers — touch them and they steal one of your GPUs.</dd>
+        <dt><canvas class="spr-icon" data-sprite="firewall" width="12" height="6"></canvas> Firewall <canvas class="spr-icon" data-sprite="paywall" width="12" height="8"></canvas> Paywall <canvas class="spr-icon" data-sprite="tos" width="12" height="7"></canvas> TOS</dt>
+        <dd>Hazards drifting across the screen — all hurt on contact.</dd>
+        <dt><canvas class="spr-icon" data-sprite="medkit" width="10" height="10"></canvas> Medkit</dt>
+        <dd>Trade 2 GPUs for 1 extra life. Only appears from level 3 onward.</dd>
+        <dt>Boss</dt>
+        <dd>Big corp fight! It shoots legal projectiles. Fill your GPU quota, then each extra GPU damages the boss.</dd>
+        <dt>Breaking News</dt>
+        <dd>Pauses the game with a headline. Active effects show as icons with countdowns in the bottom-right.</dd>
+        <dt>Sell-out Offer</dt>
+        <dd>Press Y to sell out (2× score, game ends) or N to stay indie (no bonus, keep playing).</dd>
+      </dl>
+      <button type="button" class="info-close" id="infoClose">Close</button>
+    </div>
+  </div>
+  <script>
+(function () {
+  "use strict";
 
-A retro arcade browser game where you play as a scrappy indie developer scrambling to collect GPUs while dodging Big Tech corporate agents, firewalls, paywalls, and TOS violations.
+  // ============ CONSTANTS ============
+  let GAME_W = 320;
+  let GAME_H = 180;
+  let DISPLAY_W = 960;
+  let DISPLAY_H = 540;
+  const PLAYER_MAX_SPEED = 2.4;
+  const PLAYER_ACCEL = 0.45;
+  const INVINCIBLE_FRAMES = 105;
+  const MAX_LIVES_CAP = 5;
+  const STORAGE_HIGH = "gpuRushHighScore";
 
-Built as a single self-contained HTML file — no frameworks, no build step, no dependencies.
+  const LEVELS = [
+    { n: 1, quota: 4,  subtitle: "Boot Sequence", joke: "Your README is ready. Reality is not.", speed: 1.0, boss: false, agents: false, news: false },
+    { n: 2, quota: 6,  subtitle: "First Deploy", joke: "CI passes. GPUs do not.", speed: 1.0, boss: true, bossKey: "NVIDIA", agents: true, news: false, spawnTune: { hazardHz: 168, agentInterval: 340, gpuCooldown: 64 } },
+    { n: 3, quota: 11, subtitle: "The Hype Begins", joke: "Every blog post is a law now.", speed: 1.16, boss: false, agents: true, news: true, newsInterval: [8, 12], spawnTune: { hazardHz: 76, agentInterval: 138, gpuCooldown: 46 } },
+    { n: 4, quota: 11, subtitle: "Cloud Shock", joke: "Your bill is a boss fight.", speed: 1.15, boss: true, bossKey: "AMAZOOM", agents: true, news: true, newsInterval: [9, 13] },
+    { n: 5, quota: 14, subtitle: "Peak Desperation", joke: "Scarcity is a feature.", speed: 1.22, boss: false, agents: true, news: true, newsInterval: [8, 12] },
+    { n: 6, quota: 16, subtitle: "News Cycle Hell", joke: "The ticker owns your roadmap.", speed: 1.3, boss: true, bossKey: "MEGASOFT", agents: true, news: true, newsInterval: [7, 11] },
+    { n: 7, quota: 18, subtitle: "The Final Stand", joke: "Monopoly as a service.", speed: 1.38, boss: true, bossKey: "FINAL", agents: true, news: true, newsInterval: [6, 10] },
+  ];
 
-## Gameplay
+  const BOSS_DEFS = {
+    NVIDIA: { name: "N-VIDIA", color: "#76b900", phrase: "THE COMPUTE IS OURS", hp: 5, pattern: "sin", shotRate: 82 },
+    AMAZOOM: { name: "AMAZOOM CLOUD", color: "#ff9900", phrase: "YOUR GPU IS OUR GPU", hp: 13, pattern: "eight", shotRate: 48 },
+    MEGASOFT: { name: "MEGASOFT AZURE", color: "#00a4ef", phrase: "EMBRACE. EXTEND. HOARD.", hp: 17, pattern: "lunge", shotRate: 40 },
+    FINAL: { name: "THE FINAL MONOPOLY", color: "#ff0055", phrase: "RESISTANCE IS FUTILE", hp: 24, pattern: "chaos", shotRate: 32 },
+  };
 
-- **Collect GPUs** to hit each level's quota and advance.
-- **Dodge hazards** — firewalls, paywalls, and TOS traps slow you down or steal your progress.
-- **Evade corporate agents** — CEO-style sprites that chase you and steal collected GPUs.
-- **Fight bosses** — take on NVIDIA, Amazoom, Megasoft, and a final boss. Extra GPUs beyond the quota deal damage.
-- **Breaking News events** — mid-game modifiers that shake up spawn rates, speed, or shrink the playfield.
-- **Sell-out offers** — take the deal for 2× score (but your run ends) or stay indie and keep going.
+  const BOSS_PROJ_LABELS = ["CEASE & DESIST", "PRICE HIKE", "RATE LIMIT", "SURGE PRICING", "API TAX"];
 
-## Controls
+  const NEWS_EVENTS = [
+    { id: "CRYPTO", headline: "CRYPTO CRASHES! MINERS DUMP GPUS!", dur: 8, hud: "GPU FLOOD" },
+    { id: "HYPE", headline: "AI HYPE CYCLE PEAKS!", dur: 7, hud: "CORP FRENZY" },
+    { id: "BAN", headline: "CHIP EXPORT BAN ENACTED!", dur: 8, hud: "GPU DROUGHT" },
+    { id: "OSS", headline: "OPEN SOURCE MODEL GOES VIRAL!", dur: 7, hud: "SPEED BOOST" },
+    { id: "WINTER", headline: "VC FUNDING WINTER BEGINS!", dur: 7, hud: "CORP SLOW" },
+    { id: "TRUST", headline: "ANTITRUST LAWSUIT FILED!", dur: 5, hud: "CORP FREEZE" },
+    { id: "CLOUD", headline: "CLOUD COMPUTE COSTS SKYROCKET!", dur: 7, hud: "FIELD SHRINK" },
+    { id: "LEAK", headline: "NEW CHIP ARCHITECTURE LEAKED!", dur: 7, hud: "GOLD RUSH" },
+    { id: "LAYOFF", headline: "TECH LAYOFFS HIT 100K!", dur: 0, hud: "+1 LIFE" },
+    { id: "SUB", headline: "GOVERNMENT SUBSIDIZES INDIE DEVS!", dur: 6, hud: "SHIELD" },
+    { id: "GPT", headline: "OPENAI ANNOUNCES GPT-7!", dur: 6, hud: "HYPE CHAOS" },
+    { id: "TIKTOK", headline: "TIKTOK BANNED! DEVS FLOOD MARKET!", dur: 7, hud: "HAZARD STORM" },
+    { id: "BUBBLE", headline: "AI BUBBLE POPS! STOCKS CRASH!", dur: 6, hud: "SLOW-MO" },
+    { id: "HACK", headline: "MAJOR DATA BREACH AT BIG TECH!", dur: 7, hud: "SCRAMBLE" },
+    { id: "MERGER", headline: "MEGA MERGER: TWO CORPS COMBINE!", dur: 8, hud: "GIANT AGENTS" },
+    { id: "INDIE", headline: "INDIE DEV WINS GAME OF THE YEAR!", dur: 0, hud: "+1 GPU" },
+    { id: "TARIFF", headline: "GPU TARIFFS TRIPLE OVERNIGHT!", dur: 7, hud: "TINY GPUS" },
+    { id: "INTERN", headline: "UNPAID INTERN CRASHES PROD SERVERS!", dur: 7, hud: "GLITCH" },
+    { id: "ELON", headline: "ELON TWEETS ABOUT YOUR PROJECT!", dur: 6, hud: "VIRAL" },
+    { id: "BLACKOUT", headline: "POWER GRID FAILURE HITS DATA CENTERS!", dur: 5, hud: "LIGHTS OUT" },
+    { id: "RUBIN", headline: "NVIDIA RUBIN GPUS DELAYED AGAIN!", dur: 7, hud: "GOLD FRENZY" },
+    { id: "DEEPSEEK", headline: "DEEPSEEK TRAINS GPT-5 ON $5M BUDGET!", dur: 7, hud: "CHEAP OPS" },
+    { id: "EUACT", headline: "EU AI ACT BANS HALF YOUR MODELS!", dur: 6, hud: "REGULATION" },
+    { id: "TSMC", headline: "TSMC FAB FIRE HALTS CHIP PRODUCTION!", dur: 8, hud: "CHIP FAMINE" },
+    { id: "CHINA70B", headline: "CHINA DROPS $70B CHIP SUBSIDY BOMB!", dur: 7, hud: "ARMS RACE" },
+  ];
 
-| Input | Action |
-|-------|--------|
-| Arrow keys / WASD | Move |
-| Touch drag | Move (mobile) |
-| Enter / Tap | Advance through title, news, dialogs |
-| Y / N | Accept or decline sell-out offers |
-| ? button | In-game help |
+  const NEWS_EXPLAIN = {
+    CRYPTO: "Miners are panic-selling their cards — way more GPUs will appear on the field for a while.",
+    HYPE: "Corporate frenzy! Suits are moving faster and spawning more aggressively. Watch out!",
+    BAN: "Export controls are choking supply — far fewer GPUs will show up. Every pickup counts!",
+    OSS: "Open-source models are making everything leaner — you move noticeably faster.",
+    WINTER: "Funding dried up — the corporate agents slow down. Use the breathing room!",
+    TRUST: "Regulators froze the big players — corporate agents stop moving (but still block you on contact).",
+    CLOUD: "Cloud bills exploded — the playable area shrinks. Stay away from the red margins!",
+    LEAK: "Rumors of a new chip — golden GPUs are way more likely to spawn. Grab them!",
+    LAYOFF: "The layoff wave freed up talent — you get an extra life, right now.",
+    SUB: "Government subsidy! You get a temporary shield — hazards and projectiles can't hurt you.",
+    GPT: "Hype overload — everything speeds up: you, enemies, spawns. Pure chaos!",
+    TIKTOK: "The ban triggered a flood of devs into the market — hazards spawn way faster!",
+    BUBBLE: "The bubble popped! Everything slows to a crawl. Take a breather.",
+    HACK: "A data breach scrambled the controls — your movement is reversed!",
+    MERGER: "Two megacorps merged — agents are now bigger and harder to dodge!",
+    INDIE: "Your game went viral — you get a bonus GPU, right now!",
+    TARIFF: "Import tariffs crushed the supply — GPUs that spawn are worth less. You need twice as many pickups.",
+    INTERN: "An intern pushed to production — random entities glitch and teleport around!",
+    ELON: "Your project went viral on X — medkits and GPUs spawn much faster!",
+    BLACKOUT: "The lights went out — the screen gets much darker. Navigate carefully!",
+    RUBIN: "Nvidia's next-gen delayed — everyone's fighting over current stock. Way more golden GPUs appear!",
+    DEEPSEEK: "DeepSeek proved you can do more with less — you move faster and GPUs are worth more!",
+    EUACT: "EU regulators are cracking down — the playfield shrinks and agents get aggressive!",
+    TSMC: "The world's biggest chip fab is offline — almost no GPUs will spawn. Survive on what you have!",
+    CHINA70B: "A massive subsidy war floods the market — everything spawns faster, for better or worse!",
+  };
 
-## Running the Game
+  const AGENT_TAUNTS = ["MINE!", "NO GPU FOR YOU", "PAY UP", "NOT OPEN SOURCE", "API COSTS $$$", "RENT SEEK"];
 
-Open `index.html` in any modern browser. That's it.
+  const COLORS = {
+    bg: "#0f1419",
+    star: "#4a6fa5",
+    uiCyan: "#5ce1e6",
+    uiGold: "#ffd54a",
+    uiPink: "#ff6b9d",
+    uiGreen: "#3ecf5c",
+    hudRed: "#ff3355",
+  };
 
-For stricter browser environments (font loading, audio policies), serve the folder with any static server:
+  // ============ SPRITES (rows = strings of pixel keys) ============
+  const P = {
+    _: null,
+    a: "#ff8b9a", b: "#ff5c7a", c: "#ffb89a", d: "#3d2a28", e: "#1a1a22",
+    f: "#5ce1e6", g: "#ffffff", h: "#2a2a35", i: "#00c853", j: "#00e676",
+    k: "#1b5e20", l: "#ffd54a", m: "#ffc107", n: "#37474f", o: "#78909c",
+    p: "#d32f2f", q: "#ff5252", r: "#fff59d", s: "#5d4037", t: "#212121",
+    u: "#9e9e9e", v: "#ffeb3b", w: "#eceff1", x: "#263238",
+  };
 
-```bash
-python -m http.server 8000
-```
+  function parseSprite(rows, map) {
+    const grid = [];
+    for (let y = 0; y < rows.length; y++) {
+      const row = rows[y];
+      const line = [];
+      for (let x = 0; x < row.length; x++) {
+        const ch = row[x];
+        line.push(map[ch] !== undefined ? map[ch] : (ch === " " || ch === "." ? null : ch));
+      }
+      grid.push(line);
+    }
+    return grid;
+  }
 
-Then visit `http://localhost:8000`.
+  const SPR_PLAYER = parseSprite([
+    "...hhhhhh...",
+    "..hhhhhhhh..",
+    "..swwwwwws..",
+    "..wweewwew..",
+    "..wwwmmwww..",
+    "...swwws....",
+    "..pppppppp..",
+    ".pppppppppp.",
+    ".ppplllpppp.",
+    ".ppplllpppp.",
+    ".pppppppppp.",
+    "..pppppppp..",
+    "..jjj..jjj..",
+    "..jjj..jjj..",
+    "..nn....nn..",
+  ], { ".": null, h: "#4e342e", s: "#f5d0a9", w: "#f5d0a9", e: "#263238", m: "#c9786a", p: "#455a64", l: "#66bb6a", j: "#1a237e", n: "#37474f" });
 
-## Tech Stack
+  const GPU_PAL = {
+    ...P,
+    "0": "#37474f",
+    "1": "#455a64",
+    "2": "#263238",
+    "3": "#1b5e20",
+    "4": "#2e7d32",
+    "5": "#43a047",
+    "6": "#66bb6a",
+    "7": "#ffc107",
+    "8": "#ff8f00",
+    "9": "#101018",
+  };
 
-| Layer | Technology |
-|-------|------------|
-| Rendering | Canvas 2D (320×180 internal, scaled to 960×540 display) |
-| Audio | Web Audio API (procedural synthesized sounds) |
-| UI | HTML + CSS with CRT-style shell and pixel-art sprites |
-| Fonts | Press Start 2P, VT323 (Google Fonts) |
-| Persistence | `localStorage` for high score |
-| Logic | Vanilla JavaScript, single IIFE |
+  const SPR_GPU = parseSprite([
+    "..01111100..",
+    ".012222210..",
+    "012344443210",
+    "012355553210",
+    "012366663210",
+    "012355553210",
+    "012344443210",
+    ".012222210..",
+    "..07888800..",
+    "...088800...",
+  ], GPU_PAL);
+
+  const SPR_GPU_GOLD = parseSprite([
+    "..01111100..",
+    ".012222210..",
+    "012344443210",
+    "012355553210",
+    "012366663210",
+    "012355553210",
+    "012344443210",
+    ".012222210..",
+    "..07888800..",
+    "...088800...",
+  ], {
+    ...GPU_PAL,
+    "3": "#e65100",
+    "4": "#f57c00",
+    "5": "#ffb300",
+    "6": "#ffeb3b",
+    "7": "#ffd54a",
+    "8": "#ff6f00",
+  });
+
+  const CEO_DEFS = [
+    {
+      name: "Sam A.",
+      taunts: ["AGI SOON!", "SAFETY LATER", "TRUST ME BRO", "SCALE IS ALL YOU NEED"],
+      sprite: parseSprite([
+        "...bbbbbb...",
+        "..bbbbbbbb..",
+        "..bbbbbbbbb.",
+        "..swwwwwws..",
+        ".swweewwes..",
+        ".swwwwwwws..",
+        "..swmmwws...",
+        "..sswwwss...",
+        "..gggggggg..",
+        ".gggggggggg.",
+        ".gggggggggg.",
+        "..gggggggg..",
+        "...gggggg...",
+        "..duuuuud...",
+        "...uuuuuu...",
+      ], { ".": null, b: "#8d6e4a", s: "#ffe0bd", w: "#ffe0bd", e: "#3e2723", m: "#d4937a", g: "#78909c", d: "#546e7a", u: "#37474f" }),
+    },
+    {
+      name: "Zuck",
+      taunts: ["METAVERSE THIS", "MOVE FAST", "COPY THAT FEATURE", "PIVOT TO AI"],
+      sprite: parseSprite([
+        "....bbbb....",
+        "...bbbbbb...",
+        "..bbbbbbbb..",
+        "..bswwwwsb..",
+        ".swweewwes..",
+        ".swwwwwwws..",
+        "..swmmwws...",
+        "..sswwwss...",
+        "..tttttttt..",
+        ".tttttttttt.",
+        ".tttttttttt.",
+        "..tttttttt..",
+        "...tttttt...",
+        "..duuuuud...",
+        "...uuuuuu...",
+      ], { ".": null, b: "#6d4c2f", s: "#fde8d0", w: "#fde8d0", e: "#3e2723", m: "#d4937a", t: "#546e7a", d: "#455a64", u: "#37474f" }),
+    },
+    {
+      name: "Nadella",
+      taunts: ["USE AZURE!", "EMBRACE EXTEND", "COPILOT THIS", "$44/MONTH PLEASE"],
+      sprite: parseSprite([
+        "............",
+        "....dddd....",
+        "...dddddd...",
+        "..dsswwssdd.",
+        ".swgeegews..",
+        ".swwwwwwws..",
+        "..swmmwws...",
+        "..sswwwss...",
+        "..bbbbbbbb..",
+        ".bbbbbbbbbb.",
+        ".bbbbbbbbbb.",
+        "..bbbbbbbb..",
+        "...bbbbbb...",
+        "..duuuuud...",
+        "...uuuuuu...",
+      ], { ".": null, d: "#5d4037", s: "#c68642", w: "#c68642", e: "#1a1a1a", g: "#90caf9", m: "#a0724a", b: "#1565c0", u: "#0d47a1" }),
+    },
+    {
+      name: "Dario",
+      taunts: ["BE RESPONSIBLE", "SAFETY FIRST*", "READ OUR PAPER", "CLAUDE SAYS NO"],
+      sprite: parseSprite([
+        "..kkkkkkkk..",
+        ".kkkkkkkkkk.",
+        ".kkkkkkkkkkk",
+        "..kswwwwsk..",
+        ".swweewwes..",
+        ".swwwwwwws..",
+        "..kwmmwwk...",
+        "..kkkkkkkk..",
+        "..nnnnnnnn..",
+        ".nnnnnnnnnn.",
+        ".nnnnnnnnnn.",
+        "..nnnnnnnn..",
+        "...nnnnnn...",
+        "..duuuuud...",
+        "...uuuuuu...",
+      ], { ".": null, k: "#2c1e0f", s: "#ffe0bd", w: "#ffe0bd", e: "#3e2723", m: "#d4937a", n: "#263238", d: "#1b1b1b", u: "#212121" }),
+    },
+    {
+      name: "Pichai",
+      taunts: ["GOOGLE IT", "AI OVERVIEW SAYS", "JUST USE GEMINI", "10 BLUE LINKS"],
+      sprite: parseSprite([
+        "...kkkkkk...",
+        "..kkkkkkkk..",
+        "..kkkkkkkkk.",
+        "..kswwwwsk..",
+        ".swweewwes..",
+        ".swwwwwwws..",
+        "..swmmwws...",
+        "..sswwwss...",
+        "..rgbrgbgr..",
+        ".rrgbrgbgrr.",
+        ".rrgbrgbgrr.",
+        "..rgbrgbgr..",
+        "...rgbrgb...",
+        "..duuuuud...",
+        "...uuuuuu...",
+      ], { ".": null, k: "#1a120a", s: "#b07840", w: "#b07840", e: "#1a1a1a", m: "#956030", r: "#ea4335", g: "#34a853", b: "#4285f4", d: "#333", u: "#263238" }),
+    },
+  ];
+
+  function randomCeo() {
+    return CEO_DEFS[(Math.random() * CEO_DEFS.length) | 0];
+  }
+
+
+  const SPR_FIREWALL = parseSprite([
+    "pppppppppppp",
+    "pqqqqqqqqqqp",
+    "pqqrrqqrrqqp",
+    "pqrrqqqqrrqp",
+    "pqqqqqqqqqqp",
+    "pppppppppppp",
+  ], { ...P, p: "#b71c1c", q: "#ff5252", r: "#ff9100" });
+
+  const SPR_PAYWALL = parseSprite([
+    "mmmmmmmmmmmm",
+    "mvvvvvvvvvvm",
+    "mvllllllllvm",
+    "mvlvvvvvvlvm",
+    "mvlvvvvvvlvm",
+    "mvllllllllvm",
+    "mvvvvvvvvvvm",
+    "mmmmmmmmmmmm",
+  ], { ...P, m: "#4a148c", v: "#e1bee7", l: "#ffd54a" });
+
+  const SPR_TOS = parseSprite([
+    "wwwwwwwwwwww",
+    "wxxxxxxxxxxw",
+    "wxwxwxwxwxxw",
+    "wxxxxxxxxxxw",
+    "wxwxwxwxwxxw",
+    "wxxxxxxxxxxw",
+    "wwwwwwwwwwww",
+  ], { ...P, w: "#eceff1", x: "#607d8b" });
+
+  const SPR_LEGAL_DOC = parseSprite([
+    "wwwww",
+    "wxxxw",
+    "wxwxw",
+    "wxxxw",
+    "wwwww",
+  ], { ...P, w: "#fce4ec", x: "#ad1457" });
+
+  const SPR_MEDKIT = parseSprite([
+    "..rrrrrr..",
+    ".rrrrrrrr.",
+    "rrrwwwrrrr",
+    "rrrwwwrrrr",
+    "rwwwwwwwrr",
+    "rwwwwwwwrr",
+    "rrrwwwrrrr",
+    "rrrwwwrrrr",
+    ".rrrrrrrr.",
+    "..rrrrrr..",
+  ], { ".": null, r: "#e53935", w: "#ffffff" });
+
+  const BOSS_SPRITES = {
+    NVIDIA: parseSprite([
+      "..................",
+      ".gggggggggggggggg.",
+      "ggggggggggggggggg.",
+      "gg...ggggggggg..gg",
+      "gg.ggg.gggggg.gggg",
+      "gg.gggg.gggg.ggggg",
+      "gg.ggggg.gg.gggggg",
+      "gg.gggggg..ggggggg",
+      "gg.ggggg.gg.gggggg",
+      "gg.gggg.gggg.ggggg",
+      "gg.ggg.gggggg.gggg",
+      "gg...ggggggggg..gg",
+      "ggggggggggggggggg.",
+      ".gggggggggggggggg.",
+      "..................",
+      "..gggggggggggggg..",
+      "..g..g..g..g..g...",
+      "..gggggggggggggg..",
+      "..................",
+      "..................",
+    ], { g: "#76b900", ".": null }),
+    AMAZOOM: parseSprite([
+      "..................",
+      "..oooooooooooooo..",
+      ".oooooooooooooooo.",
+      "oo..............oo",
+      "oo.oooooooooooo.oo",
+      "oo.oooooooooooo.oo",
+      "oo..............oo",
+      "oo..ooo.oo.ooo.oo.",
+      "oo..o.o.oo.o.o.oo.",
+      "oo..ooo.oo.ooo.oo.",
+      "oo..............oo",
+      ".oooooooooooooooo.",
+      "..oooooooooooooo..",
+      "..................",
+      "....o..........o..",
+      ".....o........o...",
+      "......oooooooo....",
+      ".......oooooo.....",
+      "..................",
+      "..................",
+    ], { o: "#ff9900", ".": null }),
+    MEGASOFT: parseSprite([
+      "..................",
+      "..rrrrrr.bbbbbbb..",
+      "..rrrrrr.bbbbbbb..",
+      "..rrrrrr.bbbbbbb..",
+      "..rrrrrr.bbbbbbb..",
+      "..rrrrrr.bbbbbbb..",
+      "..rrrrrr.bbbbbbb..",
+      "..................",
+      "..gggggg.yyyyyy...",
+      "..gggggg.yyyyyy...",
+      "..gggggg.yyyyyy...",
+      "..gggggg.yyyyyy...",
+      "..gggggg.yyyyyy...",
+      "..gggggg.yyyyyy...",
+      "..................",
+      "..cccccccccccccc..",
+      "..c.ccc.cccc.cc...",
+      "..cccccccccccccc..",
+      "..................",
+      "..................",
+    ], { r: "#f25022", b: "#00a4ef", g: "#7fba00", y: "#ffb900", c: "#00a4ef", ".": null }),
+    FINAL: parseSprite([
+      "........mm........",
+      "......mmmmmm......",
+      ".....mmmmmmmm.....",
+      "....mmrrrrrrmmm...",
+      "...mmrr....rrmm...",
+      "..mmrr......rmm...",
+      "..mmrr.mmmm.rmm...",
+      "..mmrr.mmmm.rmm...",
+      "..mmrr......rmm...",
+      "..mmrr.mmmm.rmm...",
+      "..mmrr.mmmm.rmm...",
+      "..mmrr......rmm...",
+      "...mmrr....rrmm...",
+      "....mmrrrrrrmmm...",
+      ".....mmmmmmmm.....",
+      "......mmmmmm......",
+      "........mm........",
+      "..mmmmmmmmmmmmmm..",
+      "..................",
+      "..................",
+    ], { m: "#ff0055", r: "#1a0008", ".": null }),
+  };
+
+  function getBossSprite(key) {
+    return BOSS_SPRITES[key] || BOSS_SPRITES.FINAL;
+  }
+
+  // ============ CANVAS SETUP ============
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+  const crackCanvas = document.getElementById("crackCanvas");
+  const crackCtx = crackCanvas.getContext("2d");
+  const overlayEl = document.getElementById("screenOverlay");
+  const crtEl = document.getElementById("crtScreen");
+
+  const off = document.createElement("canvas");
+  off.width = GAME_W;
+  off.height = GAME_H;
+  const octx = off.getContext("2d");
+  const _pixBuf = document.createElement("canvas");
+  const _pixCtx = _pixBuf.getContext("2d");
+
+  const _FORCE_MOBILE = /forceMobile/.test(location.search);
+  function isMobileDevice() {
+    return _FORCE_MOBILE || (("ontouchstart" in window || navigator.maxTouchPoints > 0) && window.innerWidth <= 900);
+  }
+  function updateMobileClass() {
+    const mobile = isMobileDevice();
+    document.body.classList.toggle("mobile-active", mobile);
+    return mobile;
+  }
+  function psFont(size) {
+    return `${Math.round(size * (isMobileDevice() ? 1.6 : 1))}px "Press Start 2P", monospace`;
+  }
+  function vtFont(size) {
+    return `${Math.round(size * (isMobileDevice() ? 1.6 : 1))}px "VT323", monospace`;
+  }
+  function isPortraitMobile() {
+    return isMobileDevice() && window.innerHeight > window.innerWidth;
+  }
+  function resizeDisplay() {
+    const mobile = updateMobileClass();
+    const portrait = isPortraitMobile();
+    const OH_H = portrait ? 20 : 16;
+    const OH_V = portrait ? 50 : 72;
+    const JOY_H = portrait ? 190 : 0;
+    if (portrait) {
+      GAME_H = 328;
+      const availW = window.innerWidth - OH_H;
+      const availH = window.innerHeight - OH_V - JOY_H;
+      GAME_W = Math.max(200, Math.min(320, Math.ceil(GAME_H * availW / availH / 4) * 4));
+      DISPLAY_W = GAME_W * 3;
+      DISPLAY_H = GAME_H * 3;
+    } else {
+      GAME_W = 320; GAME_H = 180;
+      DISPLAY_W = 960; DISPLAY_H = 540;
+    }
+    canvas.width = DISPLAY_W;
+    canvas.height = DISPLAY_H;
+    crackCanvas.width = DISPLAY_W;
+    crackCanvas.height = DISPLAY_H;
+    const availW = window.innerWidth - OH_H;
+    const availH = window.innerHeight - OH_V - JOY_H;
+    const scale = Math.min(availW / DISPLAY_W, availH / DISPLAY_H, mobile ? 10 : 2.75);
+    const w = Math.round(DISPLAY_W * scale);
+    const h = Math.round(DISPLAY_H * scale);
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+    crackCanvas.style.width = w + "px";
+    crackCanvas.style.height = h + "px";
+  }
+  window.addEventListener("resize", resizeDisplay);
+  resizeDisplay();
+
+  const infoModalEl = document.getElementById("infoModal");
+  const infoBtnEl = document.getElementById("infoBtn");
+  const infoCloseEl = document.getElementById("infoClose");
+  function renderInfoSprites() {
+    const spriteMap = {
+      player: SPR_PLAYER,
+      gpu: SPR_GPU,
+      gpuGold: SPR_GPU_GOLD,
+      agent: CEO_DEFS[0].sprite,
+      firewall: SPR_FIREWALL,
+      paywall: SPR_PAYWALL,
+      tos: SPR_TOS,
+      medkit: SPR_MEDKIT,
+      boss: BOSS_SPRITES.NVIDIA,
+    };
+    const scale = 3;
+    document.querySelectorAll(".spr-icon[data-sprite]").forEach(c => {
+      const spr = spriteMap[c.dataset.sprite];
+      if (!spr) return;
+      const h = spr.length;
+      const w = spr[0].length;
+      c.width = w;
+      c.height = h;
+      c.style.width = (w * scale) + "px";
+      c.style.height = (h * scale) + "px";
+      const cx = c.getContext("2d");
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const clr = spr[y][x];
+          if (!clr) continue;
+          cx.fillStyle = clr;
+          cx.fillRect(x, y, 1, 1);
+        }
+      }
+    });
+  }
+
+  function setInfoOpen(open) {
+    if (!infoModalEl || !infoBtnEl) return;
+    infoModalEl.classList.toggle("open", open);
+    infoModalEl.hidden = !open;
+    infoBtnEl.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) renderInfoSprites();
+  }
+  if (infoBtnEl && infoModalEl) {
+    infoBtnEl.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      setInfoOpen(!infoModalEl.classList.contains("open"));
+    });
+  }
+  if (infoCloseEl) infoCloseEl.addEventListener("click", () => setInfoOpen(false));
+  if (infoModalEl) {
+    infoModalEl.addEventListener("click", (ev) => {
+      if (ev.target === infoModalEl) setInfoOpen(false);
+    });
+  }
+
+  // ============ AUDIO ============
+  let audioCtx = null;
+  function initAudio() {
+    if (audioCtx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    audioCtx = new AC();
+  }
+  function beep(freqs, type, duration, gain = 0.1) {
+    if (!audioCtx) return;
+    const t0 = audioCtx.currentTime;
+    const g = audioCtx.createGain();
+    g.gain.value = gain;
+    g.connect(audioCtx.destination);
+    let t = t0;
+    freqs.forEach((f, i) => {
+      const o = audioCtx.createOscillator();
+      o.type = type;
+      o.frequency.value = f;
+      const seg = duration / freqs.length;
+      o.connect(g);
+      o.start(t);
+      o.stop(t + seg);
+      t += seg;
+    });
+    g.gain.setValueAtTime(gain, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + duration + 0.05);
+  }
+  function sfxCollect() { beep([880, 1100], "square", 0.08, 0.09); }
+  function sfxHit() {
+    if (!audioCtx) return;
+    const t = audioCtx.currentTime;
+    const o1 = audioCtx.createOscillator();
+    o1.type = "sawtooth";
+    o1.frequency.setValueAtTime(320, t);
+    o1.frequency.exponentialRampToValueAtTime(60, t + 0.35);
+    const g1 = audioCtx.createGain();
+    g1.gain.setValueAtTime(0.18, t);
+    g1.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    o1.connect(g1);
+    g1.connect(audioCtx.destination);
+    o1.start(t);
+    o1.stop(t + 0.4);
+    const o2 = audioCtx.createOscillator();
+    o2.type = "square";
+    o2.frequency.setValueAtTime(90, t);
+    o2.frequency.exponentialRampToValueAtTime(40, t + 0.2);
+    const g2 = audioCtx.createGain();
+    g2.gain.setValueAtTime(0.12, t);
+    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    o2.connect(g2);
+    g2.connect(audioCtx.destination);
+    o2.start(t);
+    o2.stop(t + 0.25);
+  }
+  function sfxNews() { beep([440, 660, 880], "square", 0.15, 0.1); }
+  function sfxLevel() { beep([523, 659, 784, 880, 1046], "square", 0.35, 0.09); }
+  function sfxBoss() {
+    if (!audioCtx) return;
+    const o = audioCtx.createOscillator();
+    o.type = "sawtooth";
+    o.frequency.value = 80;
+    const g = audioCtx.createGain();
+    g.gain.value = 0.11;
+    o.connect(g);
+    g.connect(audioCtx.destination);
+    o.start();
+    o.stop(audioCtx.currentTime + 0.9);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.95);
+  }
+  function sfxBossHit(hpLeft, maxHp) {
+    const base = 200 + (1 - hpLeft / maxHp) * 400;
+    beep([base, base + 80], "triangle", 0.06, 0.08);
+  }
+  function sfxSellout() {
+    if (!audioCtx) return;
+    const o = audioCtx.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(300, audioCtx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.6);
+    const g = audioCtx.createGain();
+    g.gain.value = 0.1;
+    o.connect(g);
+    g.connect(audioCtx.destination);
+    o.start();
+    o.stop(audioCtx.currentTime + 0.65);
+  }
+  function sfxGameOver() { beep([400, 300, 200, 150], "sawtooth", 0.5, 0.1); }
+  function sfxWin() {
+    beep([523, 659, 784, 659, 784, 1046], "square", 0.55, 0.09);
+  }
+
+  // ============ PARTICLES ============
+  const particles = [];
+  function spawnParticles(x, y, count, color, speed = 1.2, life = 40) {
+    for (let i = 0; i < count; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = (0.4 + Math.random() * 1.4) * speed;
+      particles.push({
+        x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+        life, max: life, color, size: 1 + Math.random() * 2,
+      });
+    }
+  }
+  function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.02;
+      p.life--;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+  }
+  function drawParticles(octx2) {
+    for (const p of particles) {
+      const a = p.life / p.max;
+      octx2.fillStyle = p.color;
+      octx2.globalAlpha = a;
+      const s = Math.max(1, p.size | 0);
+      octx2.fillRect((p.x | 0) - (s >> 1), (p.y | 0) - (s >> 1), s, s);
+    }
+    octx2.globalAlpha = 1;
+  }
+
+  // ============ STARS ============
+  const stars = [];
+  for (let i = 0; i < 80; i++) {
+    stars.push({
+      x: Math.random() * GAME_W,
+      y: Math.random() * GAME_H,
+      s: 0.3 + Math.random(),
+      sp: 0.05 + Math.random() * 0.2,
+    });
+  }
+
+  function drawStars(scrollMult, rich) {
+    octx.fillStyle = COLORS.bg;
+    octx.fillRect(0, 0, GAME_W, GAME_H);
+    octx.fillStyle = COLORS.star;
+    for (const st of stars) {
+      st.y += st.sp * scrollMult;
+      if (st.y > GAME_H) { st.y = 0; st.x = Math.random() * GAME_W; }
+      if (st.x >= GAME_W) st.x = Math.random() * GAME_W;
+      octx.fillRect(st.x | 0, st.y | 0, 1, 1);
+    }
+    if (rich) {
+      octx.fillStyle = "#7ec8e3";
+      const t = performance.now() / 1000;
+      for (let i = 0; i < 24; i++) {
+        const x = (i * 47 + t * 12) % GAME_W;
+        const y = (i * 31 + t * 40) % GAME_H;
+        if ((i + (t * 3 | 0)) % 3 === 0) octx.fillRect(x | 0, y | 0, 1, 1);
+      }
+    }
+  }
+
+  // ============ SPRITE DRAW ============
+  function spriteSize(sp) {
+    if (!sp || !sp.length) return { w: 0, h: 0 };
+    return { w: sp[0].length, h: sp.length };
+  }
+
+  function drawSpriteGrid(ctx2, sprite, px, py, glowColor) {
+    if (!sprite) return;
+    const h = sprite.length;
+    const w = sprite[0].length;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const c = sprite[y][x];
+        if (!c) continue;
+        const gx = (px + x) | 0;
+        const gy = (py + y) | 0;
+        ctx2.fillStyle = c;
+        ctx2.fillRect(gx, gy, 1, 1);
+      }
+    }
+    if (glowColor) {
+      ctx2.save();
+      ctx2.shadowColor = glowColor;
+      ctx2.shadowBlur = 4;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const c = sprite[y][x];
+          if (!c) continue;
+          ctx2.fillStyle = c;
+          ctx2.fillRect((px + x) | 0, (py + y) | 0, 1, 1);
+        }
+      }
+      ctx2.restore();
+    }
+  }
+
+  function drawFloatingLabel(ctx2, text, cx, baselineY) {
+    if (!text) return;
+    const fontPx = 9;
+    ctx2.save();
+    ctx2.font = `${fontPx}px "VT323", monospace`;
+    ctx2.textBaseline = "bottom";
+    ctx2.textAlign = "center";
+    const tw = ctx2.measureText(text).width;
+    const pad = 2;
+    const bx = cx - tw / 2 - pad;
+    const by = baselineY - fontPx - pad;
+    const bw = tw + pad * 2;
+    const bh = fontPx + pad * 2;
+    ctx2.fillStyle = "rgba(8,4,12,0.92)";
+    ctx2.fillRect(bx, by, bw, bh);
+    ctx2.strokeStyle = "#ff4081";
+    ctx2.lineWidth = 1;
+    ctx2.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
+    ctx2.lineJoin = "round";
+    ctx2.miterLimit = 2;
+    ctx2.lineWidth = 3;
+    ctx2.strokeStyle = "#120308";
+    ctx2.strokeText(text, cx, baselineY);
+    ctx2.lineWidth = 1;
+    ctx2.strokeStyle = "#3a0818";
+    ctx2.strokeText(text, cx, baselineY);
+    ctx2.fillStyle = "#fff5f8";
+    ctx2.fillText(text, cx, baselineY);
+    ctx2.restore();
+  }
+
+  function drawSpeechBubble(ctx2, text, cx, baselineY) {
+    if (!text) return;
+    const fontPx = 8;
+    ctx2.save();
+    ctx2.font = `bold ${fontPx}px "VT323", monospace`;
+    ctx2.textBaseline = "bottom";
+    ctx2.textAlign = "center";
+    const tw = ctx2.measureText(text).width;
+    const padX = 4, padY = 2;
+    const bw = tw + padX * 2;
+    const bh = fontPx + padY * 2;
+    const bx = cx - bw / 2;
+    const by = baselineY - bh - 4;
+    const r = 3;
+    ctx2.fillStyle = "#fff";
+    ctx2.beginPath();
+    ctx2.moveTo(bx + r, by);
+    ctx2.lineTo(bx + bw - r, by);
+    ctx2.quadraticCurveTo(bx + bw, by, bx + bw, by + r);
+    ctx2.lineTo(bx + bw, by + bh - r);
+    ctx2.quadraticCurveTo(bx + bw, by + bh, bx + bw - r, by + bh);
+    ctx2.lineTo(cx + 3, by + bh);
+    ctx2.lineTo(cx, by + bh + 4);
+    ctx2.lineTo(cx - 1, by + bh);
+    ctx2.lineTo(bx + r, by + bh);
+    ctx2.quadraticCurveTo(bx, by + bh, bx, by + bh - r);
+    ctx2.lineTo(bx, by + r);
+    ctx2.quadraticCurveTo(bx, by, bx + r, by);
+    ctx2.closePath();
+    ctx2.fill();
+    ctx2.strokeStyle = "#333";
+    ctx2.lineWidth = 0.8;
+    ctx2.stroke();
+    ctx2.fillStyle = "#1a1a1a";
+    ctx2.fillText(text, cx, by + bh - padY);
+    ctx2.restore();
+  }
+
+  // ============ GRAPHICS TIER ============
+  function getGraphicsTier(state) {
+    const c = state.levelGpus;
+    if (state.goldenCollectedThisLevel) return { tier: 3, internalScale: 1, chunk: 1, extra: true };
+    if (c >= 6) return { tier: 3, internalScale: 1, chunk: 1, extra: true };
+    if (c >= 3) return { tier: 2, internalScale: 1, chunk: 1, extra: false };
+    if (c >= 1) return { tier: 1, internalScale: 2, chunk: 2, extra: false };
+    return { tier: 0, internalScale: 4, chunk: 4, extra: false };
+  }
+
+  // ============ GAME STATE ============
+  const state = {
+    mode: "title",
+    introT: 0,
+    levelIndex: 0,
+    score: 0,
+    lives: 4,
+    levelGpus: 0,
+    goldenCollectedThisLevel: false,
+    player: { x: GAME_W / 2, y: GAME_H / 2, vx: 0, vy: 0, w: 12, h: 15 },
+    invincible: 0,
+    shieldTime: 0,
+    entities: [],
+    nextId: 1,
+    spawnGpu: 0,
+    spawnHazard: 0,
+    spawnAgent: 0,
+    spawnMedkit: 0,
+    newsTimer: 0,
+    newsPaper: null,
+    effects: [],
+    modifiers: {},
+    sellOutUsed: false,
+    sellOutLevel: 2 + ((Math.random() * 3) | 0),
+    sellOutOffer: null,
+    boss: null,
+    phase: "play",
+    pendingLevelComplete: false,
+    shake: 0,
+    touchTarget: null,
+    joystickInput: { ix: 0, iy: 0 },
+    keys: Object.create(null),
+    titleGpuT: 0,
+    typewriter: "",
+    typewriterFull: "Collect GPUs. Dodge corps. Survive the news cycle.",
+    typewriterIdx: 0,
+    highScore: parseInt(localStorage.getItem(STORAGE_HIGH) || "0", 10) || 0,
+    fireworks: [],
+    cutsceneT: 0,
+    cutscenePhase: 0,
+    shatterT: 0,
+    lastTime: 0,
+    starScroll: 1,
+    sellOutTriggered: false,
+    titleTwAcc: 0,
+  };
+
+  function levelConfig() {
+    return LEVELS[state.levelIndex];
+  }
+
+  /** Slower spawns early; tightens toward later levels. Optional per-level spawnTune on LEVELS entries. */
+  function getSpawnTuning(cfg) {
+    const n = cfg.n;
+    const defaults = {
+      hazardHz: Math.max(52, Math.round(126 - n * 5.5)),
+      agentInterval: Math.max(100, Math.round(248 - n * 14.5)),
+      gpuCooldown: n <= 1 ? 45 : Math.max(45, 60 - (n - 2) * 3),
+    };
+    if (cfg.spawnTune && typeof cfg.spawnTune === "object") {
+      Object.assign(defaults, cfg.spawnTune);
+    }
+    return defaults;
+  }
+
+  function resetRun() {
+    state.levelIndex = 0;
+    state.score = 0;
+    state.lives = 4;
+    state.sellOutUsed = false;
+    state.sellOutTriggered = false;
+    state.sellOutLevel = 2 + ((Math.random() * 3) | 0);
+    startLevel(0);
+  }
+
+  function startLevel(idx) {
+    state.levelIndex = idx;
+    state.levelGpus = 0;
+    state.goldenCollectedThisLevel = false;
+    state.entities = [];
+    state.player.x = GAME_W / 2 - 5;
+    state.player.y = GAME_H - 40;
+    state.player.vx = state.player.vy = 0;
+    state.invincible = 0;
+    state.shieldTime = 0;
+    state.phase = "play";
+    state.boss = null;
+    state.pendingLevelComplete = false;
+    state.newsPaper = null;
+    state.effects = [];
+    state.modifiers = {};
+    state.spawnGpu = 0;
+    state.spawnHazard = 0;
+    state.spawnAgent = 0;
+    state.spawnMedkit = 0;
+    const cfg = levelConfig();
+    const tune = getSpawnTuning(cfg);
+    if (cfg.n >= 2) state.spawnHazard = tune.hazardHz * 0.55;
+    if (cfg.agents) state.spawnAgent = tune.agentInterval * 0.55;
+    if (cfg.n >= 3) state.spawnMedkit = 120 + Math.random() * 80;
+    state.spawnGpu = cfg.n >= 2 ? tune.gpuCooldown * 0.4 : 0;
+    state.newsTimer = cfg.news ? randRange(cfg.newsInterval[0], cfg.newsInterval[1]) : 9999;
+    particles.length = 0;
+  }
+
+  function randRange(a, b) {
+    return a + Math.random() * (b - a);
+  }
+
+  function applyModifiers() {
+    const m = {
+      gpuSpawn: 1,
+      agentSpeed: 1,
+      playerSpeed: 1,
+      globalSpeed: 1,
+      agentsFrozen: false,
+      shrink: 0,
+      goldenChance: 0.03,
+      shield: state.shieldTime > 0,
+      hazardSpawnMult: 1,
+      reversed: false,
+      agentScale: 1,
+      gpuValue: 1,
+      scoreMult: 1,
+      medkitSpawnMult: 1,
+      darkness: 0,
+      glitch: false,
+    };
+    for (const e of state.effects) {
+      switch (e.id) {
+        case "CRYPTO": m.gpuSpawn *= 3; break;
+        case "HYPE": m.agentSpeed *= 2; m.agentSpawnBoost = true; break;
+        case "BAN": m.gpuSpawn *= 0.25; break;
+        case "OSS": m.playerSpeed *= 1.5; break;
+        case "WINTER": m.agentSpeed *= 0.5; break;
+        case "TRUST": m.agentsFrozen = true; break;
+        case "CLOUD": m.shrink = 0.22; break;
+        case "LEAK": m.goldenChance = 0.2; break;
+        case "GPT": m.globalSpeed *= 1.5; break;
+        case "TIKTOK": m.hazardSpawnMult *= 3; break;
+        case "BUBBLE": m.globalSpeed *= 0.4; break;
+        case "HACK": m.reversed = true; break;
+        case "MERGER": m.agentScale = 1.8; break;
+        case "TARIFF": m.gpuValue = 0.5; break;
+        case "INTERN": m.glitch = true; break;
+        case "ELON": m.gpuSpawn *= 2; m.medkitSpawnMult *= 3; break;
+        case "BLACKOUT": m.darkness = 0.6; break;
+        case "RUBIN": m.goldenChance = 0.35; break;
+        case "DEEPSEEK": m.playerSpeed *= 1.3; m.gpuValue = 1.5; break;
+        case "EUACT": m.shrink = Math.max(m.shrink, 0.15); m.agentSpeed *= 1.5; break;
+        case "TSMC": m.gpuSpawn *= 0.1; break;
+        case "CHINA70B": m.gpuSpawn *= 2; m.hazardSpawnMult *= 2; m.agentSpeed *= 1.3; break;
+        default: break;
+      }
+    }
+    if (state.shieldTime > 0) m.shield = true;
+    state.modifiers = m;
+  }
+
+  function safeRect() {
+    const m = state.modifiers.shrink || 0;
+    const inset = GAME_W * m * 0.5;
+    return { x0: inset, x1: GAME_W - inset, y0: 0, y1: GAME_H };
+  }
+
+  function triggerNews() {
+    const ev = NEWS_EVENTS[(Math.random() * NEWS_EVENTS.length) | 0];
+    sfxNews();
+    if (ev.id === "LAYOFF") {
+      state.lives = Math.min(MAX_LIVES_CAP, state.lives + 1);
+      state.effects.push({ id: ev.id, time: 0.1, hud: ev.hud });
+    } else if (ev.id === "INDIE") {
+      state.levelGpus += 1;
+      state.effects.push({ id: ev.id, time: 0.1, hud: ev.hud });
+    } else if (ev.id === "SUB") {
+      state.shieldTime = Math.max(state.shieldTime, ev.dur);
+      state.effects.push({ id: ev.id, time: ev.dur, hud: ev.hud });
+    } else if (ev.dur > 0) {
+      state.effects.push({ id: ev.id, time: ev.dur, hud: ev.hud });
+    }
+    const cfg = levelConfig();
+    state.newsTimer = cfg.news ? randRange(cfg.newsInterval[0], cfg.newsInterval[1]) : 9999;
+    state.mode = "newsPause";
+    state.newsPaper = {
+      id: ev.id,
+      headline: ev.headline,
+      durationSec: ev.dur,
+      description: NEWS_EXPLAIN[ev.id] || "Something in the world just changed!",
+    };
+  }
+
+  function dismissNewsPaper() {
+    if (state.mode !== "newsPause") return;
+    state.mode = "playing";
+    state.newsPaper = null;
+  }
+
+  // ============ ENTITY HELPERS ============
+  function addEntity(e) {
+    e.id = state.nextId++;
+    state.entities.push(e);
+    return e;
+  }
+
+  function spawnGpu(fromSide) {
+    const golden = Math.random() < (state.modifiers.goldenChance || 0.03);
+    const spr = golden ? SPR_GPU_GOLD : SPR_GPU;
+    const sz = spriteSize(spr);
+    const r = safeRect();
+    const pad = 4;
+    let x, y, vx, vy;
+    if (fromSide && Math.random() < 0.35) {
+      const left = Math.random() < 0.5;
+      x = left ? -sz.w : GAME_W + 2;
+      y = randRange(Math.max(10, r.y0 + pad), Math.min(GAME_H - sz.h - 10, r.y1 - sz.h - pad));
+      vx = left ? 0.35 + Math.random() * 0.35 : -0.35 - Math.random() * 0.35;
+      vy = (Math.random() - 0.5) * 0.4;
+    } else {
+      x = randRange(r.x0 + pad, r.x1 - sz.w - pad);
+      y = -sz.h - 2;
+      vx = (Math.random() - 0.5) * 0.25;
+      vy = 0.35 + Math.random() * 0.45;
+    }
+    addEntity({
+      type: "gpu", sprite: spr, x, y, w: sz.w, h: sz.h, vx, vy, golden,
+    });
+  }
+
+  function spawnMedkit() {
+    const spr = SPR_MEDKIT;
+    const sz = spriteSize(spr);
+    const r = safeRect();
+    addEntity({
+      type: "medkit", sprite: spr,
+      x: randRange(r.x0 + 4, r.x1 - sz.w - 4),
+      y: -sz.h,
+      w: sz.w, h: sz.h,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: 0.3 + Math.random() * 0.3,
+    });
+  }
+
+  function spawnHazard(kind) {
+    const spr = kind === "fire" ? SPR_FIREWALL : kind === "pay" ? SPR_PAYWALL : SPR_TOS;
+    const sz = spriteSize(spr);
+    const r = safeRect();
+    addEntity({
+      type: "hazard", sub: kind, sprite: spr,
+      x: randRange(r.x0 + 2, r.x1 - sz.w - 2),
+      y: -sz.h,
+      w: sz.w, h: sz.h,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: 0.5 + Math.random() * 0.4,
+    });
+  }
+
+  function spawnAgent() {
+    const ceo = randomCeo();
+    const spr = ceo.sprite;
+    const sz = spriteSize(spr);
+    const left = Math.random() < 0.5;
+    const r = safeRect();
+    const taunts = ceo.taunts;
+    addEntity({
+      type: "agent", sprite: spr, x: left ? -sz.w : GAME_W + 2,
+      y: randRange(Math.max(20, r.y0 + 2), Math.min(GAME_H - sz.h - 20, r.y1 - sz.h - 2)),
+      w: sz.w, h: sz.h, vx: left ? 0.5 : -0.5, vy: 0, dir: left ? 1 : -1,
+      taunt: 0, tauntText: taunts[(Math.random() * taunts.length) | 0],
+      ceoName: ceo.name, ceoTaunts: taunts,
+      stealCd: 0,
+    });
+  }
+
+
+  // ============ BOSS ============
+  function startBoss() {
+    const cfg = levelConfig();
+    const def = BOSS_DEFS[cfg.bossKey];
+    state.phase = "boss";
+    state.boss = {
+      key: cfg.bossKey,
+      def,
+      hp: def.hp,
+      maxHp: def.hp,
+      x: GAME_W / 2 - 9,
+      y: 24,
+      w: 18,
+      h: 20,
+      t: 0,
+      shot: 0,
+      sprite: getBossSprite(cfg.bossKey),
+    };
+    state.pendingLevelComplete = false;
+    sfxBoss();
+    state.starScroll = 2.2;
+  }
+
+  function updateBoss(dt) {
+    const b = state.boss;
+    if (!b) return;
+    const def = b.def;
+    const gs = state.modifiers.globalSpeed || 1;
+    b.t += dt * gs;
+    const spd = 0.8 * levelConfig().speed * gs;
+    if (def.pattern === "sin") {
+      b.x = GAME_W / 2 - 9 + Math.sin(b.t * 1.2) * (GAME_W * 0.28);
+      b.y = 22 + Math.sin(b.t * 2.1) * 6;
+    } else if (def.pattern === "eight") {
+      b.x = GAME_W / 2 - 9 + Math.sin(b.t * 1.4) * (GAME_W * 0.3);
+      b.y = 26 + Math.sin(b.t * 2.8) * 10;
+    } else if (def.pattern === "lunge") {
+      b.x += Math.sin(b.t * 0.9) * spd;
+      if (b.x < 40) b.x = 40;
+      if (b.x > GAME_W - 40 - b.w) b.x = GAME_W - 40 - b.w;
+      if ((b.t * 0.7 | 0) % 40 === 0 && Math.random() < 0.08) {
+        b.lungeVx = (state.player.x > b.x ? 1 : -1) * 2.2;
+      }
+      if (b.lungeVx) {
+        b.x += b.lungeVx * gs;
+        b.lungeVx *= 0.92;
+        if (Math.abs(b.lungeVx) < 0.05) b.lungeVx = 0;
+      }
+    } else {
+      b.x = GAME_W / 2 - 9 + Math.sin(b.t * 1.8) * (GAME_W * 0.25) + Math.cos(b.t * 0.7) * 20;
+      b.y = 20 + Math.sin(b.t * 3) * 12;
+    }
+
+    b.shot -= dt * 60;
+    if (b.shot <= 0) {
+      b.shot = def.shotRate / (levelConfig().speed * gs);
+      const label = BOSS_PROJ_LABELS[(Math.random() * BOSS_PROJ_LABELS.length) | 0];
+      const ang = Math.atan2(state.player.y - b.y, state.player.x - b.x);
+      addEntity({
+        type: "bproj", label,
+        x: b.x + b.w / 2 - 2, y: b.y + b.h,
+        w: 5, h: 5, vx: Math.cos(ang) * 1.1, vy: Math.sin(ang) * 1.1,
+        pulse: Math.random() * Math.PI,
+      });
+    }
+  }
+
+  function damageBoss() {
+    const b = state.boss;
+    if (!b) return;
+    b.hp--;
+    sfxBossHit(b.hp, b.maxHp);
+    spawnParticles(b.x + b.w / 2, b.y + b.h / 2, 12, b.def.color, 1.5, 50);
+    if (b.hp <= 0) {
+      spawnParticles(b.x + b.w / 2, b.y + b.h / 2, 28, b.def.color, 2.2, 70);
+      state.boss = null;
+      state.phase = "play";
+      state.starScroll = 1;
+      advanceLevel();
+    }
+  }
+
+  function advanceLevel() {
+    if (state.levelIndex >= LEVELS.length - 1) {
+      state.mode = "win";
+      sfxWin();
+      return;
+    }
+    sfxLevel();
+    startLevel(state.levelIndex + 1);
+    state.mode = "levelIntro";
+  }
+
+  // ============ COLLISION ============
+  function aabb(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  function clampPlayerToSafe() {
+    const r = safeRect();
+    const p = state.player;
+    if (p.x < r.x0) p.x = r.x0;
+    if (p.x + p.w > r.x1) p.x = r.x1 - p.w;
+    if (p.y < r.y0) p.y = r.y0;
+    if (p.y + p.h > r.y1) p.y = r.y1 - p.h;
+  }
+
+  function hurtPlayer() {
+    if (state.invincible > 0 || state.shieldTime > 0 || state.modifiers.shield) return;
+    state.lives--;
+    state.invincible = INVINCIBLE_FRAMES;
+    state.shake = 12;
+    sfxHit();
+    if (state.lives <= 0) {
+      state.mode = "gameOver";
+      state.shatterT = 1;
+      sfxGameOver();
+    }
+  }
+
+  function agentStealGpu() {
+    if (state.invincible > 0 || state.shieldTime > 0 || state.modifiers.shield) return;
+    if (state.levelGpus <= 0) return;
+    state.levelGpus = Math.max(0, state.levelGpus - 1);
+    state.invincible = Math.floor(INVINCIBLE_FRAMES * 0.5);
+    state.shake = 6;
+    beep([200, 120], "square", 0.12, 0.1);
+  }
+
+  // ============ UPDATE PLAY ============
+  function updatePlaying(dt) {
+    const cfg = levelConfig();
+    const gs = (state.modifiers.globalSpeed || 1) * cfg.speed;
+
+    applyModifiers();
+
+    for (let i = state.effects.length - 1; i >= 0; i--) {
+      const e = state.effects[i];
+      e.time -= dt;
+      if (e.time <= 0) state.effects.splice(i, 1);
+    }
+    if (state.shieldTime > 0) state.shieldTime -= dt;
+
+    if (cfg.news) {
+      state.newsTimer -= dt;
+      if (state.newsTimer <= 0) {
+        triggerNews();
+        return;
+      }
+    }
+
+    if (state.phase === "boss") {
+      updateBoss(dt);
+      clampPlayerToSafe();
+    }
+
+    const shrink = state.modifiers.shrink || 0;
+    const p = state.player;
+    if (shrink > 0) {
+      const r = safeRect();
+      if (p.x < r.x0 || p.x + p.w > r.x1) {
+        hurtPlayer();
+      }
+    }
+
+    const keys = state.keys;
+    let ix = 0, iy = 0;
+    if (keys.ArrowLeft || keys.a || keys.A) ix -= 1;
+    if (keys.ArrowRight || keys.d || keys.D) ix += 1;
+    if (keys.ArrowUp || keys.w || keys.W) iy -= 1;
+    if (keys.ArrowDown || keys.s || keys.S) iy += 1;
+    const ji = state.joystickInput;
+    const jMag = Math.hypot(ji.ix, ji.iy);
+    const joystickActive = jMag > 0.01;
+    if (joystickActive) { ix = ji.ix; iy = ji.iy; }
+
+    if (state.modifiers.reversed) { ix = -ix; iy = -iy; }
+    const psp = PLAYER_MAX_SPEED * (state.modifiers.playerSpeed || 1);
+
+    if (state.touchTarget) {
+      const tx = state.touchTarget.x - (p.w / 2);
+      const ty = state.touchTarget.y - (p.h / 2);
+      let dx = tx - p.x, dy = ty - p.y;
+      if (state.modifiers.reversed) { dx = -dx; dy = -dy; }
+      const d = Math.hypot(dx, dy);
+      const stopDist = 3;
+      if (d > stopDist) {
+        const moveSpeed = Math.min(psp * gs, d * 0.35);
+        p.vx = (dx / d) * moveSpeed;
+        p.vy = (dy / d) * moveSpeed;
+      } else {
+        p.vx = 0;
+        p.vy = 0;
+      }
+    } else if (joystickActive) {
+      const len = jMag || 1;
+      p.vx += (ix / len) * PLAYER_ACCEL * gs * jMag;
+      p.vy += (iy / len) * PLAYER_ACCEL * gs * jMag;
+    } else if (ix !== 0 || iy !== 0) {
+      const len = Math.hypot(ix, iy) || 1;
+      p.vx += (ix / len) * PLAYER_ACCEL * gs;
+      p.vy += (iy / len) * PLAYER_ACCEL * gs;
+    } else {
+      p.vx *= 0.82;
+      p.vy *= 0.82;
+    }
+
+    if (!state.touchTarget) {
+      const maxSpd = joystickActive ? psp * gs * Math.max(jMag, 0.15) : psp * gs;
+      const vm = Math.hypot(p.vx, p.vy);
+      if (vm > maxSpd) {
+        p.vx = (p.vx / vm) * maxSpd;
+        p.vy = (p.vy / vm) * maxSpd;
+      }
+    }
+    p.x += p.vx * gs;
+    p.y += p.vy * gs;
+    clampPlayerToSafe();
+
+    if (state.invincible > 0) state.invincible--;
+    if (state.shake > 0) state.shake--;
+
+    const quotaMet = state.levelGpus >= cfg.quota;
+
+    if (state.phase === "play" && quotaMet && cfg.boss) {
+      startBoss();
+      return;
+    }
+    if (state.phase === "play" && quotaMet && !cfg.boss) {
+      advanceLevel();
+      return;
+    }
+
+    if (!state.sellOutUsed && cfg.n === state.sellOutLevel &&
+        state.levelGpus >= Math.ceil(cfg.quota * 0.4)) {
+      state.sellOutUsed = true;
+      state.mode = "sellout";
+      state.sellOutOffer = { t: 8, corp: ["AMAZOOM", "CLOUDCORP", "MEGASOFT"][(Math.random() * 3) | 0] };
+      sfxSellout();
+      return;
+    }
+
+    const tune = getSpawnTuning(cfg);
+    const gpuMult = (state.modifiers.gpuSpawn || 1) * (state.phase === "boss" ? 0.85 : 1);
+    state.spawnGpu -= dt * 60 * gpuMult;
+    while (state.spawnGpu <= 0) {
+      state.spawnGpu += tune.gpuCooldown / (cfg.speed * gs);
+      spawnGpu(true);
+    }
+
+    if (cfg.n >= 2) {
+      state.spawnHazard -= dt * 60 * (state.modifiers.hazardSpawnMult || 1);
+      while (state.spawnHazard <= 0) {
+        state.spawnHazard += tune.hazardHz / gs;
+        const k = Math.random() < 0.33 ? "fire" : Math.random() < 0.5 ? "pay" : "tos";
+        spawnHazard(k);
+      }
+    }
+
+    if (cfg.agents) {
+      let interval = tune.agentInterval;
+      if (state.modifiers.agentSpawnBoost) interval *= 0.55;
+      state.spawnAgent -= dt * 60;
+      while (state.spawnAgent <= 0) {
+        state.spawnAgent += interval / gs;
+        spawnAgent();
+      }
+    }
+
+    if (cfg.n >= 3) {
+      state.spawnMedkit -= dt * 60 * (state.modifiers.medkitSpawnMult || 1);
+      if (state.spawnMedkit <= 0) {
+        state.spawnMedkit = 180 + Math.random() * 120;
+        spawnMedkit();
+      }
+    }
+
+    for (const e of state.entities) {
+      const frozen = e.type === "agent" && state.modifiers.agentsFrozen;
+      const esp = frozen ? 0 : gs;
+      if (e.type === "agent") {
+        const early = cfg.n <= 2 ? 0.7 : 1;
+        const asp = (e.vx > 0 ? 1 : -1) * 0.45 * early * (state.modifiers.agentSpeed || 1) * cfg.speed * gs;
+        e.vx = e.dir > 0 ? Math.abs(asp) : -Math.abs(asp);
+        if (!frozen) {
+          e.x += e.vx * dt * 60 / 6;
+        }
+        if (e.x < -e.w - 4 || e.x > GAME_W + 4) {
+          e.dead = true;
+        }
+        e.taunt -= dt;
+        if (e.taunt <= 0 && Math.random() < 0.01) {
+          e.taunt = 2 + Math.random() * 2;
+          const pool = e.ceoTaunts || AGENT_TAUNTS;
+          e.tauntText = pool[(Math.random() * pool.length) | 0];
+        }
+        e.stealCd = Math.max(0, e.stealCd - dt);
+      } else {
+        e.x += e.vx * esp;
+        e.y += e.vy * esp;
+      }
+      if (e.type === "gpu" || e.type === "hazard" || e.type === "bproj" || e.type === "medkit") {
+        if (e.y > GAME_H + 20 || e.x < -30 || e.x > GAME_W + 30) e.dead = true;
+      }
+      if (state.modifiers.glitch && Math.random() < 0.008) {
+        e.x = Math.random() * (GAME_W - e.w);
+        e.y = Math.random() * (GAME_H - e.h);
+      }
+    }
+
+    for (let i = state.entities.length - 1; i >= 0; i--) {
+      const e = state.entities[i];
+      if (e.dead) state.entities.splice(i, 1);
+    }
+
+    for (const e of state.entities) {
+      if (e.type === "agent" && e.stealCd <= 0) {
+        for (const g of state.entities) {
+          if (g.type === "gpu" && aabb(e, g)) {
+            g.dead = true;
+            e.stealCd = 0.35;
+            break;
+          }
+        }
+      }
+    }
+
+    const pb = { x: p.x, y: p.y, w: p.w, h: p.h };
+    for (const e of state.entities) {
+      if (e.type === "gpu" && aabb(pb, e)) {
+        e.dead = true;
+        const gpuVal = state.modifiers.gpuValue || 1;
+        const add = Math.max(1, Math.round((e.golden ? 3 : 1) * gpuVal));
+        state.levelGpus += add;
+        if (e.golden) state.goldenCollectedThisLevel = true;
+        state.score += Math.round((e.golden ? 300 : 100) * (state.modifiers.scoreMult || 1));
+        sfxCollect();
+        spawnParticles(e.x + e.w / 2, e.y + e.h / 2, e.golden ? 8 : 6, e.golden ? "#ffd54a" : COLORS.uiGreen, 1.2, 45);
+        if (state.phase === "boss" && state.boss) {
+          damageBoss();
+        }
+        continue;
+      }
+      if ((e.type === "hazard" || e.type === "bproj") && aabb(pb, e)) {
+        e.dead = true;
+        hurtPlayer();
+      }
+      if (e.type === "agent") {
+        const as = state.modifiers.agentScale || 1;
+        const ah = as > 1
+          ? { x: e.x - e.w * (as - 1) / 2, y: e.y - e.h * (as - 1) / 2, w: e.w * as, h: e.h * as }
+          : e;
+        if (aabb(pb, ah)) agentStealGpu();
+      }
+      if (e.type === "medkit" && aabb(pb, e)) {
+        if (state.levelGpus >= 2 && state.lives < MAX_LIVES_CAP) {
+          e.dead = true;
+          state.levelGpus -= 2;
+          state.lives = Math.min(MAX_LIVES_CAP, state.lives + 1);
+          spawnParticles(e.x + e.w / 2, e.y + e.h / 2, 8, "#ff5252", 1.2, 45);
+          beep([660, 880, 1100], "square", 0.12, 0.09);
+        }
+      }
+    }
+  }
+
+  // ============ INPUT ============
+  function resetTitleTypewriter() {
+    state.typewriterFull = "Collect GPUs. Dodge corps. Survive the news cycle.";
+    state.typewriterIdx = 0;
+    state.typewriter = "";
+    state.titleTwAcc = 0;
+  }
+
+  function onKeyDown(e) {
+    if (infoModalEl && infoModalEl.classList.contains("open")) {
+      if (e.key === "Escape") setInfoOpen(false);
+      return;
+    }
+    initAudio();
+    state.keys[e.key] = true;
+    if (e.key === "Enter") {
+      if (state.mode === "newsPause") {
+        dismissNewsPaper();
+        return;
+      }
+      if (state.mode === "cutsceneBad" && state.cutsceneT > 5.5) {
+        state.mode = "gameOverSold";
+        state.cutsceneT = 0;
+        return;
+      }
+      if (state.mode === "title") { resetRun(); state.introT = 0; state.mode = "intro"; }
+      else if (state.mode === "intro") { state.mode = "levelIntro"; }
+      else if (state.mode === "levelIntro") state.mode = "playing";
+      else if (state.mode === "gameOver" || state.mode === "gameOverSold") { state.mode = "title"; resetTitleTypewriter(); }
+      else if (state.mode === "win") { state.mode = "title"; resetTitleTypewriter(); }
+    }
+    if (state.mode === "sellout") {
+      if (e.key === "y" || e.key === "Y") resolveSellout(true);
+      if (e.key === "n" || e.key === "N") resolveSellout(false);
+    }
+  }
+  function onKeyUp(e) { state.keys[e.key] = false; }
+
+  function getGameCoords(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const sx = (clientX - rect.left) / rect.width;
+    const sy = (clientY - rect.top) / rect.height;
+    return { x: sx * GAME_W, y: sy * GAME_H };
+  }
+
+  function onPointerDown(e) {
+    initAudio();
+    e.preventDefault();
+    if (state.mode === "cutsceneBad" && state.cutsceneT > 5.5) {
+      state.mode = "gameOverSold";
+      state.cutsceneT = 0;
+      return;
+    }
+    if (state.mode === "newsPause") {
+      dismissNewsPaper();
+      return;
+    }
+    const { x, y } = getGameCoords(e.clientX, e.clientY);
+    if (state.mode === "title") { resetRun(); state.introT = 0; state.mode = "intro"; return; }
+    if (state.mode === "intro") { state.mode = "levelIntro"; return; }
+    if (state.mode === "levelIntro") { state.mode = "playing"; return; }
+    if (state.mode === "gameOver" || state.mode === "gameOverSold" || state.mode === "win") {
+      state.mode = "title";
+      resetTitleTypewriter();
+      return;
+    }
+    if (state.mode === "sellout") {
+      const rect = canvas.getBoundingClientRect();
+      const ny = (e.clientY - rect.top) / rect.height;
+      if (ny < 0.5) resolveSellout(true);
+      else resolveSellout(false);
+      return;
+    }
+    state.touchTarget = { x, y };
+  }
+  function onPointerMove(e) {
+    if (!state.touchTarget && e.buttons === 0) return;
+    if (e.buttons === 0 && e.pointerType === "mouse") return;
+    const { x, y } = getGameCoords(e.clientX, e.clientY);
+    state.touchTarget = { x, y };
+  }
+  function onPointerUp() {
+    state.touchTarget = null;
+  }
+
+  window.addEventListener("keydown", onKeyDown);
+  window.addEventListener("keyup", onKeyUp);
+  canvas.addEventListener("pointerdown", function (e) {
+    try {
+      canvas.setPointerCapture(e.pointerId);
+    } catch (err) { /* ignore */ }
+    onPointerDown(e);
+  });
+  canvas.addEventListener("pointermove", function (e) {
+    e.preventDefault();
+    onPointerMove(e);
+  });
+  window.addEventListener("pointerup", function (e) {
+    try {
+      canvas.releasePointerCapture(e.pointerId);
+    } catch (err) { /* ignore */ }
+    onPointerUp();
+  });
+
+  overlayEl.addEventListener("pointerdown", function (e) {
+    if (state.mode === "newsPause") {
+      e.stopPropagation();
+      dismissNewsPaper();
+    }
+  });
+
+  // ============ VIRTUAL JOYSTICK (MOBILE) ============
+  const joystickArea = document.getElementById("joystickArea");
+  const joystickBase = document.getElementById("joystickBase");
+  const joystickKnob = document.getElementById("joystickKnob");
+  const JOYSTICK_MAX_R = 58;
+  const JOYSTICK_DEADZONE = 0.18;
+  let joystickTouchId = null;
+  let joystickCenter = { x: 0, y: 0 };
+
+  function handleJoystickTouch(touch) {
+    let dx = touch.clientX - joystickCenter.x;
+    let dy = touch.clientY - joystickCenter.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > JOYSTICK_MAX_R) {
+      dx = (dx / dist) * JOYSTICK_MAX_R;
+      dy = (dy / dist) * JOYSTICK_MAX_R;
+    }
+    joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    const raw = dist / JOYSTICK_MAX_R;
+    if (raw < JOYSTICK_DEADZONE) {
+      state.joystickInput.ix = 0;
+      state.joystickInput.iy = 0;
+    } else {
+      const norm = Math.min(1, (raw - JOYSTICK_DEADZONE) / (1 - JOYSTICK_DEADZONE));
+      const curved = norm * norm;
+      const angle = Math.atan2(dy, dx);
+      state.joystickInput.ix = Math.cos(angle) * curved;
+      state.joystickInput.iy = Math.sin(angle) * curved;
+    }
+  }
+
+  function resetJoystick() {
+    joystickTouchId = null;
+    state.joystickInput.ix = 0;
+    state.joystickInput.iy = 0;
+    joystickKnob.style.transform = "translate(-50%, -50%)";
+  }
+
+  joystickBase.addEventListener("touchstart", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    initAudio();
+    const touch = e.changedTouches[0];
+    joystickTouchId = touch.identifier;
+    const rect = joystickBase.getBoundingClientRect();
+    joystickCenter.x = rect.left + rect.width / 2;
+    joystickCenter.y = rect.top + rect.height / 2;
+    handleJoystickTouch(touch);
+  }, { passive: false });
+
+  joystickBase.addEventListener("touchmove", function (e) {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === joystickTouchId) {
+        handleJoystickTouch(e.changedTouches[i]);
+        return;
+      }
+    }
+  }, { passive: false });
+
+  joystickBase.addEventListener("touchend", function (e) {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === joystickTouchId) {
+        resetJoystick();
+        return;
+      }
+    }
+  });
+
+  joystickBase.addEventListener("touchcancel", function () {
+    resetJoystick();
+  });
+
+  joystickArea.addEventListener("touchstart", function (e) {
+    initAudio();
+    const m = state.mode;
+    if (m === "playing" || m === "sellout") return;
+    e.preventDefault();
+    if (m === "newsPause") { dismissNewsPaper(); return; }
+    if (m === "title") { resetRun(); state.introT = 0; state.mode = "intro"; return; }
+    if (m === "intro") { state.mode = "levelIntro"; return; }
+    if (m === "levelIntro") { state.mode = "playing"; return; }
+    if (m === "gameOver" || m === "gameOverSold" || m === "win") { state.mode = "title"; resetTitleTypewriter(); return; }
+    if (m === "cutsceneBad" && state.cutsceneT > 5.5) { state.mode = "gameOverSold"; state.cutsceneT = 0; return; }
+  }, { passive: false });
+
+  function resolveSellout(sold) {
+    if (state.mode !== "sellout") return;
+    state.mode = sold ? "cutsceneBad" : "playing";
+    if (sold) state.cutsceneT = 0;
+    state.sellOutOffer = null;
+    if (sold) {
+      state.score = (state.score | 0) * 2;
+    }
+  }
+
+  // ============ OVERLAY CRACKS ============
+  function drawCracks() {
+    crackCanvas.width = DISPLAY_W;
+    crackCanvas.height = DISPLAY_H;
+    crackCtx.clearRect(0, 0, DISPLAY_W, DISPLAY_H);
+    const lives = state.lives;
+    if (state.mode === "gameOver") {
+      crackCtx.strokeStyle = "rgba(200,220,255,0.45)";
+      crackCtx.lineWidth = 2;
+      for (let i = 0; i < 20; i++) {
+        crackCtx.beginPath();
+        crackCtx.moveTo(DISPLAY_W / 2, DISPLAY_H / 2);
+        const ang = (i / 20) * Math.PI * 2 + (state.shatterT || 0) * 3;
+        crackCtx.lineTo(DISPLAY_W / 2 + Math.cos(ang) * DISPLAY_W * 1.1, DISPLAY_H / 2 + Math.sin(ang) * DISPLAY_H * 1.1);
+        crackCtx.stroke();
+      }
+      return;
+    }
+    if (state.mode !== "playing" && state.mode !== "sellout" && state.mode !== "newsPause") return;
+    crackCtx.strokeStyle = "rgba(255,255,255,0.25)";
+    crackCtx.lineWidth = 1.2;
+    if (lives <= 2) {
+      crackCtx.beginPath();
+      crackCtx.moveTo(DISPLAY_W * 0.2, 0);
+      crackCtx.lineTo(DISPLAY_W * 0.45, DISPLAY_H * 0.55);
+      crackCtx.stroke();
+    }
+    if (lives <= 1) {
+      crackCtx.globalAlpha = 0.35;
+      crackCtx.beginPath();
+      crackCtx.moveTo(DISPLAY_W * 0.85, DISPLAY_H * 0.1);
+      crackCtx.lineTo(DISPLAY_W * 0.55, DISPLAY_H * 0.65);
+      crackCtx.stroke();
+      crackCtx.beginPath();
+      crackCtx.moveTo(DISPLAY_W * 0.1, DISPLAY_H * 0.7);
+      crackCtx.lineTo(DISPLAY_W * 0.4, DISPLAY_H * 0.45);
+      crackCtx.stroke();
+      crackCtx.globalAlpha = 1;
+    }
+  }
+
+  // ============ RENDER ============
+  /** HUD in game coordinates; caller must set ctx transform: scale(DISPLAY_W/GAME_W, DISPLAY_H/GAME_H) after shake translate. Text ignores graphics tier / internal resolution so it stays sharp. */
+  const HUD_FONT_PS = 8;
+  const HUD_FONT_EFFECT = 9;
+  const HUD_BAR_W = 80;
+  const HUD_BAR_H = 3;
+  const HUD_HEART_STEP = 10;
+
+  function drawHudOverlay(ctx2, tier) {
+    const portrait = GAME_W < GAME_H;
+    const hm = (!portrait && isMobileDevice()) ? 1.5 : 1;
+    const hps = Math.round(HUD_FONT_PS * hm);
+    const hBarW = portrait ? Math.min(80, GAME_W - 8) : Math.round(HUD_BAR_W * hm);
+    const hBarH = Math.round(HUD_BAR_H * hm);
+    const hStep = Math.round(HUD_HEART_STEP * hm);
+    const cfg = levelConfig();
+    ctx2.textBaseline = "top";
+    ctx2.textAlign = "left";
+
+    ctx2.font = `${hps}px "Press Start 2P", monospace`;
+    ctx2.fillStyle = tier.tier === 0 ? "#c5d0e0" : "#fff";
+    ctx2.fillText(`GPUs: ${state.levelGpus}/${cfg.quota}`, 4, 4);
+
+    ctx2.fillStyle = COLORS.uiGold;
+    const sc = `SCORE ${state.score}`;
+    ctx2.textAlign = "right";
+    ctx2.fillText(sc, GAME_W - 4, 4);
+    ctx2.textAlign = "left";
+
+    ctx2.fillStyle = COLORS.uiGreen;
+    const filled = Math.min(1, state.levelGpus / cfg.quota);
+    ctx2.fillRect(4, 4 + hps + 2, hBarW * filled, hBarH);
+
+    let nextY = 4 + hps + 2 + hBarH + 2;
+
+    if (portrait) {
+      ctx2.fillStyle = COLORS.uiCyan;
+      ctx2.font = `${hps}px "Press Start 2P", monospace`;
+      ctx2.fillText(`LVL ${cfg.n}`, 4, nextY);
+      ctx2.fillStyle = COLORS.uiPink;
+      ctx2.textAlign = "right";
+      let hx = GAME_W - 4;
+      for (let i = state.lives - 1; i >= 0; i--) {
+        hx -= hStep;
+        ctx2.fillText("\u2665", hx + hStep, nextY);
+      }
+      ctx2.textAlign = "left";
+      nextY += hps + 4;
+    } else {
+      ctx2.fillStyle = COLORS.uiCyan;
+      const lvlText = `LVL ${cfg.n}`;
+      const tw = ctx2.measureText(lvlText).width;
+      ctx2.fillText(lvlText, (GAME_W - tw) / 2, 4);
+
+      ctx2.fillStyle = COLORS.uiPink;
+      let hx = 4;
+      const hy = nextY + 4;
+      ctx2.font = `${hps}px "Press Start 2P", monospace`;
+      for (let i = 0; i < state.lives; i++) {
+        ctx2.fillText("\u2665", hx, hy);
+        hx += hStep;
+      }
+      nextY = hy + hps + 4;
+    }
+
+    if (cfg.boss) {
+      ctx2.font = `${Math.round(10 * hm)}px "VT323", monospace`;
+      if (state.phase === "boss" && state.boss) {
+        ctx2.fillStyle = "#ffe082";
+        ctx2.fillText(`Boss HP ${state.boss.hp}/${state.boss.maxHp}`, 4, nextY);
+      } else {
+        ctx2.fillStyle = "#a5d6a7";
+        ctx2.fillText(portrait ? "Fill bar \u2192 boss fight" : "Fill bar \u2192 boss fight \u2014 then grab GPUs to damage it", 4, nextY);
+      }
+    }
+
+    const EFFECT_ICONS = {
+      CRYPTO: "\uD83D\uDCB0", HYPE: "\uD83D\uDCC8", BAN: "\uD83D\uDEAB",
+      OSS: "\uD83D\uDE80", WINTER: "\u2744\uFE0F",
+      TRUST: "\u2696\uFE0F", CLOUD: "\uD83D\uDCA8", LEAK: "\u2728",
+      LAYOFF: "\u2764\uFE0F", SUB: "\uD83D\uDEE1\uFE0F", GPT: "\u26A1",
+      TIKTOK: "\uD83C\uDF2A\uFE0F", BUBBLE: "\uD83D\uDC22", HACK: "\uD83D\uDD00",
+      MERGER: "\uD83D\uDC7E", INDIE: "\uD83C\uDF1F", TARIFF: "\uD83D\uDCE6",
+      INTERN: "\uD83D\uDC1B", ELON: "\uD83D\uDE80", BLACKOUT: "\uD83C\uDF11",
+      RUBIN: "\uD83D\uDC8E", DEEPSEEK: "\u26A1", EUACT: "\uD83C\uDFDB\uFE0F",
+      TSMC: "\uD83D\uDD25", CHINA70B: "\uD83C\uDFAF",
+    };
+
+    let ex = GAME_W - 4;
+    const ey = GAME_H - 12;
+    const seen = new Set();
+    ctx2.textAlign = "right";
+    ctx2.font = `${hps}px "Press Start 2P", monospace`;
+    if (state.shieldTime > 0) {
+      const label = `\uD83D\uDEE1\uFE0F ${Math.ceil(state.shieldTime)}s`;
+      ctx2.fillStyle = COLORS.uiCyan;
+      ctx2.fillText(label, ex, ey);
+      ex -= ctx2.measureText(label).width + 8;
+    }
+    for (const e of state.effects) {
+      if (e.id && e.time > 0 && !seen.has(e.id)) {
+        seen.add(e.id);
+        if (e.id === "SUB") continue;
+        const icon = EFFECT_ICONS[e.id] || "\u2753";
+        const label = `${icon} ${Math.ceil(e.time)}s`;
+        ctx2.fillStyle = COLORS.uiCyan;
+        ctx2.fillText(label, ex, ey);
+        ex -= ctx2.measureText(label).width + 8;
+      }
+    }
+    ctx2.textAlign = "left";
+  }
+
+  const vramHintEl = document.getElementById("vramHint");
+  function syncFooterVramHint() {
+    if (!vramHintEl) return;
+    const show =
+      state.mode === "playing" || state.mode === "sellout";
+    if (!show) {
+      vramHintEl.hidden = true;
+      vramHintEl.classList.remove("footer-vram--flash");
+      return;
+    }
+    const tier = getGraphicsTier(state);
+    if (tier.tier < 2) {
+      vramHintEl.hidden = false;
+      vramHintEl.textContent =
+        tier.tier === 0
+          ? "· VRAM low — collect GPUs for a sharper screen"
+          : "· Collect more GPUs for full effects";
+      vramHintEl.classList.toggle("footer-vram--flash", tier.tier === 0);
+    } else {
+      vramHintEl.hidden = true;
+      vramHintEl.classList.remove("footer-vram--flash");
+    }
+  }
+
+  function drawBossTextOverlay(ctx2) {
+    const b = state.boss;
+    if (!b) return;
+    const bm = isMobileDevice() ? 1.5 : 1;
+    ctx2.save();
+    ctx2.textBaseline = "top";
+    ctx2.textAlign = "left";
+    ctx2.fillStyle = "#fff";
+    ctx2.font = `${Math.round(8 * bm)}px "Press Start 2P", monospace`;
+    ctx2.fillText(b.def.name, 4, b.y + b.h + 6);
+    ctx2.fillStyle = b.def.color;
+    ctx2.font = `${Math.round(10 * bm)}px "VT323", monospace`;
+    ctx2.fillText(b.def.phrase, 4, b.y + b.h + 12);
+    ctx2.font = `${Math.round(7 * bm)}px "Press Start 2P", monospace`;
+    ctx2.fillStyle = "#aaa";
+    ctx2.textAlign = "left";
+    const bossLabel = b.def.name;
+    const labelW = ctx2.measureText(bossLabel).width;
+    ctx2.fillText(bossLabel, 4, GAME_H - 14);
+    const barX = 4 + labelW + 6;
+    const bw = GAME_W - barX - 4;
+    const hpw = bw * (b.hp / b.maxHp);
+    ctx2.fillStyle = "#333";
+    ctx2.fillRect(barX, GAME_H - 10, bw, 4);
+    ctx2.fillStyle = b.def.color;
+    ctx2.fillRect(barX, GAME_H - 10, hpw, 4);
+    ctx2.restore();
+  }
+
+  function renderGame() {
+    const tier = getGraphicsTier(state);
+    const internalScale = tier.internalScale;
+    const iw = Math.max(1, Math.floor(GAME_W / internalScale));
+    const ih = Math.max(1, Math.floor(GAME_H / internalScale));
+    off.width = iw;
+    off.height = ih;
+    octx.setTransform(iw / GAME_W, 0, 0, ih / GAME_H, 0, 0);
+
+    drawStars(state.starScroll, tier.extra);
+
+    const shrink = state.modifiers.shrink || 0;
+    if (shrink > 0) {
+      const inset = GAME_W * shrink * 0.5;
+      octx.save();
+      octx.strokeStyle = "rgba(255,50,80,0.7)";
+      octx.setLineDash([4, 4]);
+      octx.lineWidth = 1;
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 200);
+      octx.strokeRect(inset + pulse, 2, GAME_W - inset * 2 - pulse * 2, GAME_H - 4);
+      octx.fillStyle = `rgba(255,0,60,${0.08 + pulse * 0.06})`;
+      octx.fillRect(0, 0, inset + 2, GAME_H);
+      octx.fillRect(GAME_W - inset - 2, 0, inset + 2, GAME_H);
+      octx.restore();
+    }
+
+    for (const e of state.entities) {
+      let glow = null;
+      if (e.type === "gpu" && e.golden) glow = "#ffd54a";
+      if (e.type === "medkit") glow = "#ff5252";
+      const aScale = (e.type === "agent" && state.modifiers.agentScale > 1) ? state.modifiers.agentScale : 0;
+      if (aScale > 1) {
+        octx.save();
+        octx.translate(e.x + e.w / 2, e.y + e.h / 2);
+        octx.scale(aScale, aScale);
+        drawSpriteGrid(octx, e.sprite, -e.w / 2, -e.h / 2, tier.extra && glow ? glow : null);
+        octx.restore();
+      } else {
+        drawSpriteGrid(octx, e.sprite, e.x, e.y, tier.extra && glow ? glow : null);
+      }
+      if (e.type === "bproj") {
+        e.pulse = (e.pulse || 0) + 0.2;
+        const cx = e.x + e.w / 2;
+        const cy = e.y + e.h / 2;
+        const bob = Math.sin(e.pulse) * 0.35;
+        drawSpriteGrid(octx, SPR_LEGAL_DOC, e.x + bob, e.y + bob, "#ff4081");
+        octx.strokeStyle = "#ff4081";
+        octx.lineWidth = 1;
+        octx.beginPath();
+        octx.arc(cx, cy, 2.2 + Math.sin(e.pulse) * 0.4, 0, Math.PI * 2);
+        octx.stroke();
+      }
+    }
+
+    if (state.boss) {
+      const b = state.boss;
+      drawSpriteGrid(octx, b.sprite, b.x, b.y, tier.extra ? b.def.color : null);
+    }
+
+    const p = state.player;
+    const trail = state.invincible > 0;
+    if (trail) {
+      octx.save();
+      const hue = (performance.now() / 20) % 360;
+      octx.globalAlpha = 0.35;
+      drawSpriteGrid(octx, SPR_PLAYER, p.x - p.vx * 2, p.y - p.vy * 2, `hsl(${hue},100%,70%)`);
+      octx.restore();
+    }
+    const shielded = state.shieldTime > 0 || state.modifiers.shield;
+    const flash = state.invincible > 0 && (state.invincible % 10 < 5);
+    if (!flash || state.invincible === 0) {
+      drawSpriteGrid(octx, SPR_PLAYER, p.x, p.y, shielded ? "#5ce1e6" : null);
+    } else {
+      drawSpriteGrid(octx, SPR_PLAYER, p.x, p.y, "#ffffff");
+    }
+    if (shielded) {
+      octx.save();
+      const pulse = 0.25 + 0.15 * Math.sin(performance.now() / 150);
+      octx.globalAlpha = pulse;
+      octx.fillStyle = "#5ce1e6";
+      const pad = 2;
+      octx.beginPath();
+      octx.ellipse(p.x + p.w / 2, p.y + p.h / 2, p.w / 2 + pad, p.h / 2 + pad, 0, 0, Math.PI * 2);
+      octx.fill();
+      octx.restore();
+    }
+
+    updateParticles();
+    drawParticles(octx);
+
+    if (tier.tier === 0) {
+      octx.fillStyle = "rgba(22,28,36,0.42)";
+      octx.fillRect(0, 0, GAME_W, GAME_H);
+    } else if (tier.tier === 1) {
+      octx.fillStyle = "rgba(22,28,36,0.2)";
+      octx.fillRect(0, 0, GAME_W, GAME_H);
+    }
+    if (state.modifiers.darkness > 0) {
+      octx.fillStyle = `rgba(0,0,0,${state.modifiers.darkness})`;
+      octx.fillRect(0, 0, GAME_W, GAME_H);
+    }
+
+    if (internalScale > 1) {
+      _pixBuf.width = off.width;
+      _pixBuf.height = off.height;
+      _pixCtx.drawImage(off, 0, 0);
+      off.width = GAME_W;
+      off.height = GAME_H;
+      octx.imageSmoothingEnabled = false;
+      octx.drawImage(_pixBuf, 0, 0, GAME_W, GAME_H);
+    }
+
+    ctx.imageSmoothingEnabled = false;
+    const shakeX = state.shake > 0 ? (Math.random() - 0.5) * 4 : 0;
+    const shakeY = state.shake > 0 ? (Math.random() - 0.5) * 4 : 0;
+    ctx.save();
+    ctx.translate(shakeX, shakeY);
+    ctx.drawImage(off, 0, 0, DISPLAY_W, DISPLAY_H);
+    ctx.imageSmoothingEnabled = true;
+    ctx.scale(DISPLAY_W / GAME_W, DISPLAY_H / GAME_H);
+    drawHudOverlay(ctx, tier);
+    if (state.boss) drawBossTextOverlay(ctx);
+    for (const e of state.entities) {
+      if (e.type === "bproj") {
+        const cx = e.x + e.w / 2;
+        const labelY = e.y < 16 ? e.y + e.h + 10 : e.y - 1;
+        drawFloatingLabel(ctx, e.label || "", cx, labelY);
+      }
+      if (e.type === "agent") {
+        if (e.taunt > 0) {
+          drawSpeechBubble(ctx, e.tauntText, e.x + e.w / 2, e.y - 2);
+        }
+        if (e.ceoName) {
+          ctx.save();
+          ctx.font = `${Math.round(6 * (isMobileDevice() ? 1.5 : 1))}px "Press Start 2P", monospace`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillStyle = "#fff";
+          ctx.globalAlpha = 0.85;
+          ctx.fillText(e.ceoName, e.x + e.w / 2, e.y + e.h + 1);
+          ctx.globalAlpha = 1;
+          ctx.restore();
+        }
+      }
+    }
+    ctx.restore();
+    ctx.imageSmoothingEnabled = false;
+  }
+
+  const INTRO_LINES = [
+    { t: 0.0,  text: "THE YEAR IS 2026.", style: "head" },
+    { t: 1.2,  text: "GPUs ARE THE NEW GOLD.", style: "head" },
+    { t: 2.8,  text: "Big Tech hoards every chip.", style: "body" },
+    { t: 4.0,  text: "Cloud prices skyrocket.", style: "body" },
+    { t: 5.2,  text: "Indie devs can barely afford a single GPU.", style: "body" },
+    { t: 6.8,  text: "You are one of them.", style: "head" },
+    { t: 8.2,  text: "Armed with nothing but determination", style: "body" },
+    { t: 9.2,  text: "and a mass-produced keyboard...", style: "body" },
+    { t: 10.8, text: "You must collect GPUs to survive.", style: "head" },
+    { t: 12.2, text: "Dodge corporate agents. Dodge the paywalls.", style: "body" },
+    { t: 13.4, text: "Fight the bosses. Ship your game.", style: "body" },
+    { t: 15.0, text: "PRESS ENTER TO PLAY", style: "prompt" },
+  ];
+
+  function renderIntro() {
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = COLORS.bg;
+    ctx.fillRect(0, 0, DISPLAY_W, DISPLAY_H);
+    ctx.textAlign = "center";
+    const t = state.introT;
+    const m = isMobileDevice() ? 1.35 : 1;
+    let yPos = 50;
+    for (const line of INTRO_LINES) {
+      if (t < line.t) continue;
+      const age = t - line.t;
+      const alpha = Math.min(1, age / 0.6);
+      ctx.globalAlpha = alpha;
+      if (line.style === "head") {
+        ctx.fillStyle = COLORS.uiGreen;
+        ctx.font = `${Math.round(16 * m)}px "Press Start 2P", monospace`;
+      } else if (line.style === "prompt") {
+        const blink = Math.floor(performance.now() / 500) % 2;
+        ctx.fillStyle = blink ? COLORS.uiGold : "transparent";
+        ctx.font = `${Math.round(14 * m)}px "Press Start 2P", monospace`;
+      } else {
+        ctx.fillStyle = "#d8d8d8";
+        ctx.font = `${Math.round(22 * m)}px "VT323", monospace`;
+      }
+      ctx.fillText(line.text, DISPLAY_W / 2, yPos);
+      yPos += line.style === "head" ? Math.round(32 * m) : Math.round(26 * m);
+    }
+    ctx.globalAlpha = 1;
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#555";
+    ctx.font = vtFont(13);
+    ctx.textAlign = "center";
+    ctx.fillText("TAP TO SKIP", DISPLAY_W / 2, DISPLAY_H - 12);
+    ctx.textAlign = "left";
+  }
+
+  function renderTitle() {
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = COLORS.bg;
+    ctx.fillRect(0, 0, DISPLAY_W, DISPLAY_H);
+    if (!state.typewriterFull) resetTitleTypewriter();
+    state.titleGpuT += 0.02;
+    for (let i = 0; i < 5; i++) {
+      const gx = 40 + i * 55 + Math.sin(state.titleGpuT + i) * 4;
+      const gy = 100 + Math.cos(state.titleGpuT * 1.2 + i) * 5;
+      ctx.save();
+      ctx.scale(2, 2);
+      drawSpriteGrid(ctx, SPR_GPU, gx, gy, "#3ecf5c");
+      ctx.restore();
+    }
+    const pulse = 0.85 + 0.15 * Math.sin(performance.now() / 400);
+    ctx.save();
+    ctx.shadowColor = "#3ecf5c";
+    ctx.shadowBlur = 20 * pulse;
+    ctx.fillStyle = `#3ecf5c`;
+    ctx.font = psFont(28);
+    ctx.textAlign = "center";
+    ctx.fillText("GPU RUSH", DISPLAY_W / 2, 70);
+    ctx.restore();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = COLORS.uiPink;
+    ctx.font = psFont(12);
+    ctx.fillText("The Indie Dev's Nightmare", DISPLAY_W / 2, 110);
+
+    ctx.fillStyle = "#aaa";
+    ctx.font = vtFont(14);
+    ctx.fillText(state.typewriter || "", DISPLAY_W / 2, 145);
+
+    ctx.fillStyle = "#888";
+    ctx.font = vtFont(12);
+    const controlsText = isMobileDevice() ? "Use the joystick below to move" : "Arrows / WASD move · Touch drag on mobile";
+    ctx.fillText(controlsText, DISPLAY_W / 2, 175);
+    ctx.fillStyle = COLORS.uiGold;
+    const blink = Math.floor(performance.now() / 500) % 2;
+    if (blink) ctx.fillText(isMobileDevice() ? "TAP TO START" : "CLICK OR PRESS ENTER TO START", DISPLAY_W / 2, 210);
+    ctx.fillStyle = COLORS.uiGold;
+    ctx.font = vtFont(14);
+    ctx.fillText(`HIGH SCORE: ${state.highScore}`, DISPLAY_W / 2, 240);
+    ctx.textAlign = "left";
+  }
+
+  function renderLevelIntro() {
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = COLORS.bg;
+    ctx.fillRect(0, 0, DISPLAY_W, DISPLAY_H);
+    const cfg = levelConfig();
+    ctx.fillStyle = "#fff";
+    ctx.font = psFont(22);
+    ctx.textAlign = "center";
+    ctx.fillText(`LEVEL ${cfg.n}`, DISPLAY_W / 2, 80);
+    ctx.fillStyle = COLORS.uiCyan;
+    ctx.font = psFont(12);
+    ctx.fillText(cfg.subtitle, DISPLAY_W / 2, 120);
+    ctx.fillStyle = "#aaa";
+    ctx.font = vtFont(16);
+    ctx.fillText(cfg.joke, DISPLAY_W / 2, 160);
+    if (cfg.boss) {
+      ctx.fillStyle = "#a5d6a7";
+      ctx.font = vtFont(15);
+      ctx.fillText("Collect enough GPUs to fill the bar — a boss gate opens.", DISPLAY_W / 2, 186);
+      ctx.fillText("During the fight, every GPU you grab damages the boss.", DISPLAY_W / 2, 206);
+    }
+    ctx.fillStyle = COLORS.uiGold;
+    ctx.font = psFont(11);
+    ctx.fillText("TAP TO CONTINUE", DISPLAY_W / 2, cfg.boss ? 256 : 220);
+    ctx.textAlign = "left";
+  }
+
+  function renderGameOver() {
+    ctx.fillStyle = COLORS.bg;
+    ctx.fillRect(0, 0, DISPLAY_W, DISPLAY_H);
+    ctx.fillStyle = COLORS.hudRed;
+    ctx.font = psFont(20);
+    ctx.textAlign = "center";
+    ctx.fillText("GAME OVER", DISPLAY_W / 2, 90);
+    ctx.fillStyle = "#aaa";
+    ctx.font = vtFont(14);
+    ctx.fillText("The corps won this round.", DISPLAY_W / 2, 130);
+    ctx.fillText("Your GPU dreams remain dreams.", DISPLAY_W / 2, 155);
+    ctx.fillStyle = COLORS.uiGold;
+    ctx.fillText(`SCORE: ${state.score}`, DISPLAY_W / 2, 190);
+    if (state.score >= state.highScore) {
+      state.highScore = state.score;
+      localStorage.setItem(STORAGE_HIGH, String(state.highScore));
+    }
+    ctx.fillText(`HIGH: ${state.highScore}`, DISPLAY_W / 2, 215);
+    const blink = Math.floor(performance.now() / 500) % 2;
+    if (blink) {
+      ctx.fillStyle = COLORS.uiGold;
+      ctx.font = psFont(10);
+      ctx.fillText("TAP TO TRY AGAIN", DISPLAY_W / 2, 260);
+    }
+    ctx.textAlign = "left";
+  }
+
+  function renderSoldOutGameOver() {
+    ctx.fillStyle = "#1a1208";
+    ctx.fillRect(0, 0, DISPLAY_W, DISPLAY_H);
+    ctx.fillStyle = COLORS.uiGold;
+    ctx.font = psFont(16);
+    ctx.textAlign = "center";
+    ctx.fillText("YOU SOLD OUT.", DISPLAY_W / 2, 80);
+    ctx.fillStyle = "#dcb";
+    ctx.font = vtFont(15);
+    ctx.fillText("Corner office. Free snacks.", DISPLAY_W / 2, 120);
+    ctx.fillText("Your side project gathers dust.", DISPLAY_W / 2, 145);
+    ctx.fillText("Was it worth it?", DISPLAY_W / 2, 170);
+    ctx.fillStyle = COLORS.uiGold;
+    ctx.fillText(`SCORE: ${state.score}`, DISPLAY_W / 2, 210);
+    ctx.fillStyle = "#aa8866";
+    ctx.font = vtFont(12);
+    ctx.fillText("(includes corporate blood money)", DISPLAY_W / 2, 235);
+    const blink = Math.floor(performance.now() / 500) % 2;
+    if (blink) {
+      ctx.fillStyle = COLORS.uiGold;
+      ctx.font = psFont(10);
+      ctx.fillText("TAP TO TRY AGAIN", DISPLAY_W / 2, 280);
+    }
+    ctx.textAlign = "left";
+  }
+
+  function renderWin() {
+    ctx.fillStyle = COLORS.bg;
+    ctx.fillRect(0, 0, DISPLAY_W, DISPLAY_H);
+    const t = performance.now() / 1000;
+    for (let i = 0; i < 30; i++) {
+      const ang = t * 3 + i * 0.9;
+      const burst = (i * 37) % 200;
+      const px = DISPLAY_W * 0.15 + (i * 53) % (DISPLAY_W * 0.7);
+      const py = DISPLAY_H * 0.2 + Math.sin(t * 2 + i) * 40 + (i % 4) * 25;
+      ctx.globalAlpha = 0.35 + 0.4 * Math.sin(t * 10 + i);
+      ctx.fillStyle = `hsl(${(i * 47 + t * 120) % 360 | 0},85%,58%)`;
+      ctx.fillRect(px + Math.cos(ang) * burst * 0.15, py + Math.sin(ang) * burst * 0.15, 5, 5);
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = COLORS.uiGreen;
+    ctx.font = psFont(18);
+    ctx.textAlign = "center";
+    ctx.fillText("YOU DID IT!", DISPLAY_W / 2, 70);
+    ctx.fillStyle = "#ccc";
+    ctx.font = vtFont(14);
+    ctx.fillText("Against all odds, you shipped with real hardware.", DISPLAY_W / 2, 110);
+    ctx.fillText("The corps tried to stop you. The news tried to shake you.", DISPLAY_W / 2, 132);
+    ctx.fillText("They waved money. You stayed indie.", DISPLAY_W / 2, 154);
+    ctx.fillStyle = COLORS.uiGold;
+    ctx.font = psFont(20);
+    ctx.fillText(`SCORE ${state.score}`, DISPLAY_W / 2, 200);
+    if (state.score >= state.highScore) {
+      state.highScore = state.score;
+      localStorage.setItem(STORAGE_HIGH, String(state.highScore));
+    }
+    const blink = Math.floor(performance.now() / 500) % 2;
+    if (blink) {
+      ctx.fillStyle = COLORS.uiGold;
+      ctx.font = psFont(10);
+      ctx.fillText("TAP FOR TITLE", DISPLAY_W / 2, 260);
+    }
+    ctx.textAlign = "left";
+  }
+
+  function renderCutsceneBad() {
+    ctx.fillStyle = "#0a0a12";
+    ctx.fillRect(0, 0, DISPLAY_W, DISPLAY_H);
+    ctx.fillStyle = "#888";
+    ctx.font = vtFont(16);
+    ctx.textAlign = "center";
+    const t = state.cutsceneT;
+    if (t < 2) ctx.fillText("[CORNER OFFICE]", DISPLAY_W / 2, 100);
+    else if (t < 4) ctx.fillText("[FREE SNACKS]", DISPLAY_W / 2, 100);
+    else if (t < 6) ctx.fillText("[SIDE PROJECT: dusty.exe]", DISPLAY_W / 2, 100);
+    else {
+      ctx.fillText("A single tear rolls down your IDE.", DISPLAY_W / 2, 100);
+      ctx.fillStyle = COLORS.uiGold;
+      ctx.font = psFont(14);
+      ctx.fillText(`FINAL SCORE: ${state.score}`, DISPLAY_W / 2, 150);
+      ctx.font = vtFont(11);
+      ctx.fillStyle = "#a98";
+      ctx.fillText("(includes corporate blood money)", DISPLAY_W / 2, 180);
+      ctx.fillStyle = COLORS.uiGold;
+      if (Math.floor(performance.now() / 500) % 2) {
+        ctx.font = psFont(10);
+        ctx.fillText("TAP TO CONTINUE", DISPLAY_W / 2, 230);
+      }
+    }
+    ctx.textAlign = "left";
+  }
+
+  function wrapFillTextCenter(ctx2, text, cx, startY, maxW, lineH) {
+    ctx2.textAlign = "center";
+    const words = String(text).split(/\s+/);
+    let line = "";
+    let y = startY;
+    for (const w of words) {
+      const test = line ? `${line} ${w}` : w;
+      if (ctx2.measureText(test).width > maxW && line) {
+        ctx2.fillText(line, cx, y);
+        y += lineH;
+        line = w;
+      } else {
+        line = test;
+      }
+    }
+    if (line) ctx2.fillText(line, cx, y);
+    return y + lineH;
+  }
+
+  function showOverlay(html) {
+    overlayEl.innerHTML = html;
+    overlayEl.classList.add("visible");
+  }
+
+  function hideOverlay() {
+    overlayEl.classList.remove("visible");
+    overlayEl.innerHTML = "";
+  }
+
+  function showNewsPaper() {
+    const np = state.newsPaper;
+    if (!np) return;
+    let durLine = "";
+    if (np.durationSec > 0)
+      durLine = `<div class="duration">\u23F1\uFE0F Duration: ${np.durationSec} seconds</div>`;
+    else
+      durLine = `<div class="duration">\u26A1 Instant effect</div>`;
+
+    showOverlay(`
+      <div class="news-bg"></div>
+      <div class="news-paper">
+        <div class="label">\uD83D\uDCF0 This Just In:</div>
+        <div class="headline">${np.headline}</div>
+        <div class="effect">${np.description}</div>
+        ${durLine}
+        <div class="continue">PRESS ENTER OR TAP TO CONTINUE</div>
+      </div>
+    `);
+  }
+
+  function showSellout() {
+    const offer = state.sellOutOffer;
+    const corp = offer ? offer.corp : "MEGACORP";
+    const s = state.score | 0;
+    showOverlay(`
+      <div class="sellout-bg"></div>
+      <div class="sellout-panel">
+        <div class="bonus">${corp} wants to buy you out!</div>
+        <div class="sellout-zone">
+          <div class="sell-yes" id="sellYes">
+            <div class="key">[Y] SELL OUT</div>
+            <div class="sell-highlight">${s} \u2192 ${s * 2} pts</div>
+            <div class="desc">Double your score.<br>But your indie run ends.</div>
+          </div>
+          <div class="sell-no" id="sellNo">
+            <div class="key">[N] STAY INDIE</div>
+            <div class="desc">No bonus. Just keep playing.</div>
+          </div>
+        </div>
+        <div class="sellout-timer" id="sellTimer"></div>
+      </div>
+    `);
+    document.getElementById("sellYes").addEventListener("click", () => resolveSellout(true));
+    document.getElementById("sellNo").addEventListener("click", () => resolveSellout(false));
+  }
+
+  function updateSelloutTimer() {
+    const el = document.getElementById("sellTimer");
+    if (!el || !state.sellOutOffer) return;
+    el.textContent = `Auto-stay indie in ${Math.max(0, state.sellOutOffer.t).toFixed(1)}s`;
+  }
+
+  let _overlayMode = null;
+  function syncOverlay() {
+    if (state.mode === "newsPause" && _overlayMode !== "newsPause") {
+      showNewsPaper();
+      _overlayMode = "newsPause";
+    } else if (state.mode === "sellout" && _overlayMode !== "sellout") {
+      showSellout();
+      _overlayMode = "sellout";
+    } else if (state.mode === "sellout") {
+      updateSelloutTimer();
+    } else if (state.mode !== "newsPause" && state.mode !== "sellout" && _overlayMode) {
+      hideOverlay();
+      _overlayMode = null;
+    }
+  }
+
+  function loop(now) {
+    const dt = Math.min(0.05, (now - (state.lastTime || now)) / 1000);
+    state.lastTime = now;
+
+    if (state.mode === "intro") {
+      state.introT += dt;
+    } else if (state.mode === "title") {
+      state.titleTwAcc += dt;
+      while (state.titleTwAcc > 0.038 && state.typewriterIdx < state.typewriterFull.length) {
+        state.titleTwAcc -= 0.038;
+        state.typewriterIdx++;
+        state.typewriter = state.typewriterFull.slice(0, state.typewriterIdx);
+      }
+    }
+
+    if (state.mode === "playing") {
+      updatePlaying(dt);
+      if (state.mode === "sellout") { /* switched inside */ }
+    } else if (state.mode === "sellout" && state.sellOutOffer) {
+      state.sellOutOffer.t -= dt;
+      if (state.sellOutOffer.t <= 0) resolveSellout(false);
+    } else if (state.mode === "cutsceneBad") {
+      state.cutsceneT += dt;
+    }
+
+    crtEl.classList.toggle("life1", state.lives <= 1 && state.mode === "playing");
+
+    if (state.mode === "intro") renderIntro();
+    else if (state.mode === "title") renderTitle();
+    else if (state.mode === "levelIntro") renderLevelIntro();
+    else if (state.mode === "newsPause") {
+      applyModifiers();
+      renderGame();
+    } else     if (state.mode === "playing" || state.mode === "sellout") {
+      applyModifiers();
+      renderGame();
+    } else if (state.mode === "gameOver") {
+      renderGameOver();
+      state.shatterT = (state.shatterT || 0) + dt * 2;
+    } else if (state.mode === "gameOverSold") renderSoldOutGameOver();
+    else if (state.mode === "win") renderWin();
+    else if (state.mode === "cutsceneBad") {
+      renderCutsceneBad();
+    }
+
+    drawCracks();
+    syncOverlay();
+    syncFooterVramHint();
+    requestAnimationFrame(loop);
+  }
+
+  requestAnimationFrame(loop);
+})();
+  </script>
+</body>
+</html>
