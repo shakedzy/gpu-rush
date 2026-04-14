@@ -479,7 +479,7 @@
       </div>
       <div class="crt-footer">
         <div class="power-led on" id="powerLed"></div>
-        <span class="brand">GPU-TRON 3000 [v0.8]</span>
+        <span class="brand">GPU-TRON 3000 [v0.9]</span>
         <span id="vramHint" class="footer-vram" hidden></span>
         <span class="footer-fill" aria-hidden="true"></span>
         <button type="button" class="info-btn" id="infoBtn" aria-haspopup="dialog" aria-expanded="false">?</button>
@@ -1004,8 +1004,14 @@
     const mobile = updateMobileClass();
     const portrait = isPortraitMobile();
     if (portrait) {
-      GAME_W = 200; GAME_H = 328;
-      DISPLAY_W = 600; DISPLAY_H = 984;
+      GAME_H = 328;
+      const joystickH = 200;
+      const availW = window.innerWidth - 16;
+      const availH = window.innerHeight - 72 - joystickH;
+      const idealW = GAME_H * (availW / availH) * 1.05;
+      GAME_W = Math.max(200, Math.min(252, Math.round(idealW / 4) * 4));
+      DISPLAY_W = GAME_W * 3;
+      DISPLAY_H = GAME_H * 3;
     } else {
       GAME_W = 320; GAME_H = 180;
       DISPLAY_W = 960; DISPLAY_H = 540;
