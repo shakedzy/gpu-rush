@@ -452,6 +452,8 @@
       .mobile-active #joystickArea { display: none; }
     }
     .mobile-active .crt-shell { border-radius: 6px; padding: 6px 6px 12px; }
+    .mobile-active .crt-screen { box-shadow: inset 0 0 40px rgba(0,0,0,0.4), 0 0 20px var(--screen-glow); }
+    .mobile-active .crt-screen::after { box-shadow: inset 0 0 50px rgba(0,0,0,0.35); }
     .mobile-active .crt-footer { font-size: 15px; gap: 6px 8px; margin-top: 6px; }
     .mobile-active .footer-vram { font-size: 14px; max-width: 60vw; }
     @media (max-width: 600px) {
@@ -978,6 +980,8 @@
   off.width = GAME_W;
   off.height = GAME_H;
   const octx = off.getContext("2d");
+  const _pixBuf = document.createElement("canvas");
+  const _pixCtx = _pixBuf.getContext("2d");
 
   function isMobileDevice() {
     return ("ontouchstart" in window || navigator.maxTouchPoints > 0) && window.innerWidth <= 900;
@@ -2507,6 +2511,16 @@
     if (state.modifiers.darkness > 0) {
       octx.fillStyle = `rgba(0,0,0,${state.modifiers.darkness})`;
       octx.fillRect(0, 0, GAME_W, GAME_H);
+    }
+
+    if (internalScale > 1) {
+      _pixBuf.width = off.width;
+      _pixBuf.height = off.height;
+      _pixCtx.drawImage(off, 0, 0);
+      off.width = GAME_W;
+      off.height = GAME_H;
+      octx.imageSmoothingEnabled = false;
+      octx.drawImage(_pixBuf, 0, 0, GAME_W, GAME_H);
     }
 
     ctx.imageSmoothingEnabled = false;
