@@ -479,7 +479,7 @@
       </div>
       <div class="crt-footer">
         <div class="power-led on" id="powerLed"></div>
-        <span class="brand">GPU-TRON 3000 [v0.9]</span>
+        <span class="brand">GPU-TRON 3000 [v0.10]</span>
         <span id="vramHint" class="footer-vram" hidden></span>
         <span class="footer-fill" aria-hidden="true"></span>
         <button type="button" class="info-btn" id="infoBtn" aria-haspopup="dialog" aria-expanded="false">?</button>
@@ -983,8 +983,9 @@
   const _pixBuf = document.createElement("canvas");
   const _pixCtx = _pixBuf.getContext("2d");
 
+  const _FORCE_MOBILE = /forceMobile/.test(location.search);
   function isMobileDevice() {
-    return ("ontouchstart" in window || navigator.maxTouchPoints > 0) && window.innerWidth <= 900;
+    return _FORCE_MOBILE || (("ontouchstart" in window || navigator.maxTouchPoints > 0) && window.innerWidth <= 900);
   }
   function updateMobileClass() {
     const mobile = isMobileDevice();
@@ -1003,13 +1004,14 @@
   function resizeDisplay() {
     const mobile = updateMobileClass();
     const portrait = isPortraitMobile();
+    const OH_H = portrait ? 20 : 16;
+    const OH_V = portrait ? 50 : 72;
+    const JOY_H = portrait ? 190 : 0;
     if (portrait) {
       GAME_H = 328;
-      const joystickH = 200;
-      const availW = window.innerWidth - 16;
-      const availH = window.innerHeight - 72 - joystickH;
-      const idealW = GAME_H * (availW / availH) * 1.05;
-      GAME_W = Math.max(200, Math.min(252, Math.round(idealW / 4) * 4));
+      const availW = window.innerWidth - OH_H;
+      const availH = window.innerHeight - OH_V - JOY_H;
+      GAME_W = Math.max(200, Math.min(320, Math.ceil(GAME_H * availW / availH / 4) * 4));
       DISPLAY_W = GAME_W * 3;
       DISPLAY_H = GAME_H * 3;
     } else {
@@ -1020,12 +1022,11 @@
     canvas.height = DISPLAY_H;
     crackCanvas.width = DISPLAY_W;
     crackCanvas.height = DISPLAY_H;
-    const joystickH = portrait ? 200 : 0;
-    const maxW = window.innerWidth - 16;
-    const maxH = window.innerHeight - 72 - joystickH;
-    const scale = Math.min(maxW / DISPLAY_W, maxH / DISPLAY_H, mobile ? 10 : 2.75);
-    const w = Math.floor(DISPLAY_W * scale);
-    const h = Math.floor(DISPLAY_H * scale);
+    const availW = window.innerWidth - OH_H;
+    const availH = window.innerHeight - OH_V - JOY_H;
+    const scale = Math.min(availW / DISPLAY_W, availH / DISPLAY_H, mobile ? 10 : 2.75);
+    const w = Math.round(DISPLAY_W * scale);
+    const h = Math.round(DISPLAY_H * scale);
     canvas.style.width = w + "px";
     canvas.style.height = h + "px";
     crackCanvas.style.width = w + "px";
