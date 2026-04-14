@@ -427,8 +427,8 @@
     }
     #joystickBase {
       position: relative;
-      width: 140px;
-      height: 140px;
+      width: 170px;
+      height: 170px;
       border-radius: 50%;
       background: radial-gradient(circle, rgba(92,225,230,0.08) 0%, rgba(26,31,46,0.6) 100%);
       border: 2px solid rgba(92,225,230,0.25);
@@ -436,8 +436,8 @@
     }
     #joystickKnob {
       position: absolute;
-      width: 52px;
-      height: 52px;
+      width: 60px;
+      height: 60px;
       border-radius: 50%;
       background: radial-gradient(circle, rgba(92,225,230,0.45), rgba(92,225,230,0.15));
       border: 2px solid rgba(92,225,230,0.5);
@@ -1000,8 +1000,8 @@
     const mobile = updateMobileClass();
     const portrait = isPortraitMobile();
     if (portrait) {
-      GAME_W = 200; GAME_H = 330;
-      DISPLAY_W = 600; DISPLAY_H = 990;
+      GAME_W = 200; GAME_H = 328;
+      DISPLAY_W = 600; DISPLAY_H = 984;
     } else {
       GAME_W = 320; GAME_H = 180;
       DISPLAY_W = 960; DISPLAY_H = 540;
@@ -1010,7 +1010,7 @@
     canvas.height = DISPLAY_H;
     crackCanvas.width = DISPLAY_W;
     crackCanvas.height = DISPLAY_H;
-    const joystickH = portrait ? 160 : 0;
+    const joystickH = portrait ? 200 : 0;
     const maxW = window.innerWidth - 16;
     const maxH = window.innerHeight - 72 - joystickH;
     const scale = Math.min(maxW / DISPLAY_W, maxH / DISPLAY_H, mobile ? 10 : 2.75);
@@ -1799,7 +1799,9 @@
     if (keys.ArrowUp || keys.w || keys.W) iy -= 1;
     if (keys.ArrowDown || keys.s || keys.S) iy += 1;
     const ji = state.joystickInput;
-    if (Math.abs(ji.ix) > 0.08 || Math.abs(ji.iy) > 0.08) { ix = ji.ix; iy = ji.iy; }
+    const jMag = Math.hypot(ji.ix, ji.iy);
+    const joystickActive = jMag > 0.01;
+    if (joystickActive) { ix = ji.ix; iy = ji.iy; }
 
     if (state.modifiers.reversed) { ix = -ix; iy = -iy; }
     const psp = PLAYER_MAX_SPEED * (state.modifiers.playerSpeed || 1);
@@ -1819,6 +1821,10 @@
         p.vx = 0;
         p.vy = 0;
       }
+    } else if (joystickActive) {
+      const len = jMag || 1;
+      p.vx += (ix / len) * PLAYER_ACCEL * gs * jMag;
+      p.vy += (iy / len) * PLAYER_ACCEL * gs * jMag;
     } else if (ix !== 0 || iy !== 0) {
       const len = Math.hypot(ix, iy) || 1;
       p.vx += (ix / len) * PLAYER_ACCEL * gs;
@@ -1829,10 +1835,11 @@
     }
 
     if (!state.touchTarget) {
+      const maxSpd = joystickActive ? psp * gs * Math.max(jMag, 0.15) : psp * gs;
       const vm = Math.hypot(p.vx, p.vy);
-      if (vm > psp * gs) {
-        p.vx = (p.vx / vm) * psp * gs;
-        p.vy = (p.vy / vm) * psp * gs;
+      if (vm > maxSpd) {
+        p.vx = (p.vx / vm) * maxSpd;
+        p.vy = (p.vy / vm) * maxSpd;
       }
     }
     p.x += p.vx * gs;
@@ -2101,7 +2108,8 @@
   const joystickArea = document.getElementById("joystickArea");
   const joystickBase = document.getElementById("joystickBase");
   const joystickKnob = document.getElementById("joystickKnob");
-  const JOYSTICK_MAX_R = 44;
+  const JOYSTICK_MAX_R = 58;
+  const JOYSTICK_DEADZONE = 0.18;
   let joystickTouchId = null;
   let joystickCenter = { x: 0, y: 0 };
 
@@ -2114,8 +2122,17 @@
       dy = (dy / dist) * JOYSTICK_MAX_R;
     }
     joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-    state.joystickInput.ix = dx / JOYSTICK_MAX_R;
-    state.joystickInput.iy = dy / JOYSTICK_MAX_R;
+    const raw = dist / JOYSTICK_MAX_R;
+    if (raw < JOYSTICK_DEADZONE) {
+      state.joystickInput.ix = 0;
+      state.joystickInput.iy = 0;
+    } else {
+      const norm = Math.min(1, (raw - JOYSTICK_DEADZONE) / (1 - JOYSTICK_DEADZONE));
+      const curved = norm * norm;
+      const angle = Math.atan2(dy, dx);
+      state.joystickInput.ix = Math.cos(angle) * curved;
+      state.joystickInput.iy = Math.sin(angle) * curved;
+    }
   }
 
   function resetJoystick() {
